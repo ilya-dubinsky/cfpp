@@ -12,7 +12,7 @@
 #define PARITY_ODD 1
 #define PARITY_EVEN 0
 
-#define PURGE(x) purge_array((uint8_t*)&(x), sizeof(x))
+#define PURGE(x) OPENSSL_cleanse((uint8_t*)&(x), sizeof(x))
 /**
  * Count trailing zero bits of a byte value.
  * @param v the byte value

@@ -403,35 +403,45 @@ size_t base64url_encode( uint8_t* input, size_t input_len, char* output) {
 	/* Input validation */
 	if (!(output && input && input_len))
 		return BITS_ERROR;
-	/* break the input into chunks of three bytes, corresponding to 4 6-bit values*/
-	size_t padding = 0;
-	uint8_t current_triplet[4];
+	size_t padding = (3-input_len%3)%3; /* padding is 1 if the remainder is 2, 2 if 1 and 0 otherwise */
+
 	size_t output_ptr = 0;
 	size_t input_ptr = 0;
 	while (input_ptr < input_len) {
-		/* if there aren't enough values in the input, the padding character will be used in the output */
-		memset(current_triplet, 0x40, sizeof(current_triplet));
+		uint8_t temp = 0;
+
 		/* first byte is always available, taking the most significant 6 bits */
-		current_triplet[0] = input[input_ptr]>>2;
+		output[output_ptr++] = base64_url_encoding_table[input[input_ptr]>>2];
+
 		/* taking the 2 least significant bits to the second chunk */
-		current_triplet[1] = (input[input_ptr++] & 0x3) << 4;
-		if (input_ptr != input_len) {
-			/* taking the 4 msbs to the 2nd chunk byte */
-			current_triplet[1] |= (input[input_ptr] >> 4);
-			/* taking the 4 lsbs to the 3rd chunk */
-			current_triplet[2] = (input[input_ptr++] & 0xf) << 2;
-			if (input_ptr != input_len) {
-				/* taking the 2 msbs to the 3rd chunk */
-				current_triplet[2] |= (input[input_ptr] >> 6);
-				/* taking the remaining 6 bits to the 4th chunk */
-				current_triplet[3] = input[input_ptr++] & 0x3F;
-			}
+		temp = (input[input_ptr++] & 0x3) << 4;
+		if (input_ptr == input_len) {
+			// we're done
+			output[output_ptr++] = base64_url_encoding_table[temp];
+			break;
 		}
-		/* copy the values to the output */
-		for (size_t i=0; i<sizeof(current_triplet); i++)
-			output[output_ptr++] = base64_url_encoding_table[current_triplet[i]];
+		/* taking the 4 msbs to the 2nd chunk byte */
+		temp |= (input[input_ptr] >> 4);
+		output[output_ptr++] = base64_url_encoding_table[temp];
+
+		/* taking the 4 lsbs to the 3rd chunk */
+		temp = (input[input_ptr++] & 0xf) << 2;
+		if (input_ptr == input_len) {
+			/* we're done again */
+			output[output_ptr++] = base64_url_encoding_table[temp];
+			break;
+		}
+
+		/* taking the 2 msbs to the 3rd chunk */
+		temp |= (input[input_ptr] >> 6);
+		output[output_ptr++] = base64_url_encoding_table[temp];
+		/* taking the remaining 6 bits to the 4th chunk */
+		output[output_ptr++] = base64_url_encoding_table[input[input_ptr++] & 0x3F];
 
 	}
+	/* pad */
+	for (; padding>0; padding--)
+		output[output_ptr++] = base64_url_encoding_table[0x40];
 	return output_ptr;
 }
 
