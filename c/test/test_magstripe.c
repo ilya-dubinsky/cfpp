@@ -206,5 +206,4 @@ void test_pvv(){
 int main(void) {
 	for (size_t c = 0; c< sizeof(magstripe_tests)/sizeof(TEST); c++)
 		run_test(magstripe_tests+c);
-
 }
