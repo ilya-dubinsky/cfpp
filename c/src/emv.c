@@ -266,7 +266,7 @@ int derive_icc_master_key(uint8_t *unpacked_pan, size_t unpacked_pan_len, uint8_
 	if (! (unpacked_pan && unpacked_pan_len && output && output_len && encryption_key && encryption_key_len))
 		return EMV_ERROR;
 	/* validate the input */
-	if (!PAN_LENGTH_VALID(unpacked_pan_len))
+	if (!VALID_PAN_LENGTH(unpacked_pan_len))
 		return EMV_ERROR;
 
 	algorithm &= 0x1; /* sanitize the input */

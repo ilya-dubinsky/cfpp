@@ -5,6 +5,8 @@ INCLUDES := /usr/local/opt/openssl@1.1/include -I./src
 COMPILE_FLAGS := -std=c99 -I$(INCLUDES) -O0 -g3 -pedantic -Wall -Wextra -c -fmessage-length=0 -MMD -MP 
 
 SOURCES=$(wildcard src/*.c)
+HEADERS=$(patsubst src/%.c, src/%.h, $(SOURCES))
+
 OBJECTS=$(patsubst src/%.c, bin/%.o, $(SOURCES))
 
 ## fill this out automatically
@@ -28,7 +30,7 @@ $(TEST_TARGETS): $(TEST_OBJECTS) $(OBJECTS)
 
 $(TEST_OBJECTS): $(TEST_SOURCES)
 
-$(OBJECTS): $(SOURCES)
+$(OBJECTS): $(SOURCES) $(HEADERS)
 
 bin/%.o: src/%.c
 	gcc $(COMPILE_FLAGS) -MF"$(@:%.o=%.d)" -MT"$@" -o "./$@" "$<"

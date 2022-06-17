@@ -33,7 +33,7 @@ int compute_cvv( uint8_t * pan, size_t pan_length, uint8_t * expiry, uint8_t * s
 	if (! (pan && pan_length && expiry && service_code && cvk_a && cvk_b && output && output_len ))
 		return PAYMENTS_ERROR;
 	/* more validations of length here: */
-	if (!PAN_LENGTH_VALID(pan_length))
+	if (!VALID_PAN_LENGTH(pan_length))
 		return PAYMENTS_ERROR;
 
 	/* copy and initialize keys. The keys WONT be checked for weakness or for parity */

@@ -235,7 +235,7 @@ void test_base64() {
 		print_test_step(i+1, "Base64 calculation");
 		print_array("\tInput value: ", p->data, p->len, "\n");
 		memset(out_buffer, 0, sizeof(out_buffer));
-		base64url_encode(p->data, p->len, out_buffer);
+		base64url_encode(p->data, p->len, out_buffer, BASE64_PADDING);
 		printf("\tBase64 output %s", out_buffer);
 		if (!strcmp(out_buffer, p->result))
 			printf(" - valid\n");

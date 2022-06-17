@@ -6,7 +6,7 @@
 
 #define CSN_LENGTH 2
 
-#define PAN_LENGTH_VALID(x) ( (x)>=MIN_PAN_LENGTH && (x) <= MAX_PAN_LENGTH)
+#define VALID_PAN_LENGTH(x) ( (x)>=MIN_PAN_LENGTH && (x) <= MAX_PAN_LENGTH)
 
 #define PAYMENTS_ERROR 	-1
 #define PAYMENTS_SUCCESS 0

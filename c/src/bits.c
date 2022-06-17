@@ -4,7 +4,7 @@
 #include <string.h>
 
 
-/* The macro is not ensuring types, so it is for internal use only */
+/* The macro is not checking types, so it is for internal use only */
 #define PACK_BCD(x,y)  (( ((x)&0xF)<<4) | ((y)&0xF))
 
 
@@ -399,7 +399,7 @@ static char base64_url_encoding_table[] = { 'A', 'B', 'C', 'D', 'E', 'F', 'G',
  * @param output buffer to store the output
  * @result returns the actual output length, or BITS_ERROR in case of an error
  */
-size_t base64url_encode( uint8_t* input, size_t input_len, char* output) {
+size_t base64url_encode( uint8_t* input, size_t input_len, char* output, int padding_flag) {
 	/* Input validation */
 	if (!(output && input && input_len))
 		return BITS_ERROR;
@@ -440,8 +440,10 @@ size_t base64url_encode( uint8_t* input, size_t input_len, char* output) {
 
 	}
 	/* pad */
-	for (; padding>0; padding--)
-		output[output_ptr++] = base64_url_encoding_table[0x40];
+	if (padding_flag)
+		for (; padding>0; padding--)
+			output[output_ptr++] = base64_url_encoding_table[0x40];
+
 	return output_ptr;
 }
 

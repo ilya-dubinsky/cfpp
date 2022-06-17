@@ -2,6 +2,8 @@
 #define __CFPP_BITS_H
 
 #include <stdlib.h>
+#include <openssl/crypto.h>
+
 
 #define BITS_ERROR -1
 #define BITS_SUCCESS 0
@@ -13,6 +15,11 @@
 #define PARITY_EVEN 0
 
 #define PURGE(x) OPENSSL_cleanse((uint8_t*)&(x), sizeof(x))
+
+#define BASE64_LEN(x)  ((x)*4/3 + (4-((x)%3)))
+
+#define BASE64_NO_PADDING 0
+#define BASE64_PADDING 1
 /**
  * Count trailing zero bits of a byte value.
  * @param v the byte value
@@ -152,7 +159,7 @@ uint8_t luhn_check_digit(uint8_t *input, size_t input_len);
  * @param output buffer to store the output
  * @result returns the actual output length, or BITS_ERROR in case of an error
  */
-size_t base64url_encode( uint8_t* input, size_t input_len, char* output);
+size_t base64url_encode( uint8_t* input, size_t input_len, char* output, int padding);
 
 /*
  * Rewrites a memory area repeatedly with varying bitmasks

@@ -20,4 +20,12 @@
 
 #define AES_BLOCK_SIZE 16
 
+#define AES_GCM_TAG_SIZE 16
+#define AES_HMAC_TAG_SIZE 16
+
+#define HMAC_AAD_LEN_SIZE 	8
+#define SHA256_OUTPUT_SIZE	32
+
+#define AES_MAX_TAG_SIZE AES_GCM_TAG_SIZE
+
 #endif
