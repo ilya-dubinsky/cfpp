@@ -69,25 +69,6 @@ void print_bits_32(uint32_t value, size_t count) {
 }
 
 /**
- * Print out the array of bytes of the specified length
- * @param header string to print before the array
- * @param array the array to print out
- * @param length length of the array
- * @param trailer string to print after the array
- */
-void print_array(char * header, uint8_t * array, size_t length, char * trailer) {
-#ifndef CFPP_SUPPRESS_IO
-	if (!array || length <=0) return;
-	printf("%s", header);
-	for (size_t i=0; i<length; i++){
-		printf("%02X", array[i]);
-		if (i%2==1) printf(" ");
-	}
-	printf("%s", trailer);
-#endif
-}
-
-/**
  * Internal function to print out a character
 */
 
@@ -149,6 +130,40 @@ void print_test_footer( char * test_name ) {
 	printf("\n");
 #endif
 }
+
+
+/**
+ * Print out the array of bytes of the specified length
+ * @param header string to print before the array
+ * @param array the array to print out
+ * @param length length of the array
+ * @param trailer string to print after the array
+ */
+void print_array(char * header, uint8_t * array, size_t length, char * trailer) {
+#ifndef CFPP_SUPPRESS_IO
+	if (!array || length <=0) return;
+	size_t offset = 0;
+	int tabs = 0;
+	if (header!= NULL)	{
+		for ( ; offset<strlen(header); offset++)
+			if ((char)'\t'== header[offset]) tabs++;
+	}
+	printf("%s", header);
+	for (size_t i=0; i<length; i++){
+		if ( (i%20==0) && (i!=0)) {
+			printf("\n");
+			repeat_char('\t', tabs);
+			repeat_char(' ', offset-tabs);
+		}
+
+		printf("%02X", array[i]);
+		if (i%2==1) printf(" ");
+
+	}
+	printf(" len = %lu %s",length, trailer);
+#endif
+}
+
 
 /**
  * Runs the test.

@@ -2,6 +2,7 @@
 #define __CFPP_IO_H
 
 #include <stdlib.h>
+#include <stdio.h>
 
 /** The functions in this module are used to print out intermediate steps
  *  of various functions and examples provided elsewhere.

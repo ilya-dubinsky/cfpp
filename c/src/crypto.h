@@ -1,6 +1,8 @@
 #ifndef __CFPP_CRYPTO_H
 #define __CFPP_CRYPTO_H
 
+#include <stdlib.h>
+#include <openssl/rsa.h>
 
 #define ALGORITHM_TDES 0
 #define ALGORITHM_AES 1
@@ -27,5 +29,18 @@
 #define SHA256_OUTPUT_SIZE	32
 
 #define AES_MAX_TAG_SIZE AES_GCM_TAG_SIZE
+
+/**
+ * Allocates and returns an RSA structure or NULL in case of an error. It is the caller's responsibility
+ * to call RSA_free on the return value.
+ *
+ * @param n the modulus
+ * @param n_len the modulus length
+ * @param e the exponent
+ * @param d the private key, can be NULL
+ * @param d_len size of the private key, must be 0 if d is NULL
+ * @result the RSA structure or NULL if an error occurred
+ */
+RSA *make_rsa_key( uint8_t n[], size_t n_len, uint32_t e, uint8_t d[], size_t d_len );
 
 #endif
