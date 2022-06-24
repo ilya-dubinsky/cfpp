@@ -8,6 +8,7 @@
 #include <openssl/rsa.h>
 #include <openssl/sha.h>
 #include <openssl/des.h>
+#include <openssl/aes.h>
 #include <openssl/err.h>
 
 #include <arpa/inet.h>
@@ -929,7 +930,44 @@ cleanup:
 
 static int emv_derive_icc_master_key_aes(uint8_t *unpacked_input, size_t unpacked_input_len,
 		uint8_t *encryption_key, size_t encryption_key_len, uint8_t *output, size_t output_len) {
-	return EMV_ERROR; /* TODO not implemented yet */
+
+	int result = EMV_ERROR;
+
+	/* the unpacked input contains the PAN and the CSN already */
+	uint8_t packed_input[AES_BLOCK_SIZE];
+
+	pack_bcd(unpacked_input, unpacked_input_len, packed_input, AES_BLOCK_SIZE, PAD_LEFT);
+	print_array("\tPacked input: ", packed_input, AES_BLOCK_SIZE, "\n");
+
+	/* prepare the first chunk of the output */
+	AES_KEY key;
+	if (AES_set_encrypt_key(encryption_key, encryption_key_len*8, &key)) goto cleanup;
+
+	AES_ecb_encrypt(packed_input, output, &key, AES_ENCRYPT);
+	print_array("\tFirst chunk: ", output, AES_BLOCK_SIZE, "\n");
+
+	if (output_len>AES_BLOCK_SIZE) {
+		/* continue for the second half of the key */
+		uint8_t output_buffer[AES_BLOCK_SIZE];
+
+		/* inverse the input vector */
+		for (int i = 0; i<AES_BLOCK_SIZE; i++)
+			packed_input[i] ^= 0xFF;
+
+
+		print_array("\tInverted input: ", packed_input, AES_BLOCK_SIZE, "\n");
+
+		AES_ecb_encrypt(packed_input, output_buffer, &key, AES_ENCRYPT);
+		print_array("\tFull second chunk: ", output_buffer, AES_BLOCK_SIZE, "\n");
+
+		memcpy(output+AES_BLOCK_SIZE, output_buffer, output_len-AES_BLOCK_SIZE);
+	}
+	result = EMV_SUCCESS;
+
+cleanup:
+	PURGE(key);
+	PURGE(packed_input);
+	return result; /* TODO not implemented yet */
 }
 
 static int emv_derive_icc_master_key_des(uint8_t *unpacked_input, size_t unpacked_input_len,
@@ -943,7 +981,6 @@ static int emv_derive_icc_master_key_des(uint8_t *unpacked_input, size_t unpacke
 	 * Option B is for longer values
 	 */
 	if (unpacked_input_len<= EMV_OPTION_A_MAX_PAN_LEN + CSN_LENGTH) /* Option A */ {
-		printf("Option A\n");
 		if (unpacked_input_len <= TDES_BLOCK_SIZE<<1)
 			/* pack with right padding */
 			pack_bcd(unpacked_input, unpacked_input_len, enc_input, TDES_BLOCK_SIZE, PAD_RIGHT);
@@ -953,7 +990,6 @@ static int emv_derive_icc_master_key_des(uint8_t *unpacked_input, size_t unpacke
 		}
 	}
 	else {
-		printf("Option B\n");
 		/* pack with left padding by 1 nibble if odd */
 		pack_bcd(unpacked_input, unpacked_input_len, enc_input,  (unpacked_input_len+1)>>1,  PAD_LEFT);
 		print_array("\tPacked input: ", enc_input, TDES_BLOCK_SIZE<<1, "\n");
@@ -968,10 +1004,10 @@ static int emv_derive_icc_master_key_des(uint8_t *unpacked_input, size_t unpacke
 		uint8_t hash_decimalized_unpacked[TDES_BLOCK_SIZE<<1];
 
 		decimalize_vector(hash_output, 2*SHA_DIGEST_LENGTH, hash_decimalized_unpacked, TDES_BLOCK_SIZE<<1);
-		print_array("\tDecimalized output: ", hash_decimalized_unpacked, TDES_BLOCK_SIZE<<1, "\n");
 
 		memset(enc_input, 0, TDES_BLOCK_SIZE<<1);
 		pack_bcd(hash_decimalized_unpacked, TDES_BLOCK_SIZE<<1, enc_input, TDES_BLOCK_SIZE, PAD_RIGHT);
+		print_array("\tDecimalized output: ", enc_input, TDES_BLOCK_SIZE, "\n");
 	}
 
 	print_array("\tEncryption input: ", enc_input, TDES_BLOCK_SIZE, "\n");
@@ -1011,7 +1047,8 @@ int emv_derive_icc_session_key(uint8_t *icc_master_key,
 		size_t output_len){
 
 	uint8_t magic_number[2] = {0xF0, 0x0F};
-	unsigned long error_code = 0;
+	int result = EMV_ERROR;
+	unsigned long error_code;
 
 	/* validate inputs */
 	if (! (icc_master_key && icc_master_key_length && atc && output && output_len))
@@ -1020,9 +1057,9 @@ int emv_derive_icc_session_key(uint8_t *icc_master_key,
 	algorithm &= 0x1;
 
 	/* check output length */
-	if (algorithm==ALGORITHM_TDES && output_len!= TDES_KEY_LENGTH_2)
+	if (ALGORITHM_TDES==algorithm && output_len!= TDES_KEY_LENGTH_2)
 		return EMV_ERROR;
-	if (algorithm==ALGORITHM_AES && !VALID_AES_KEY_SIZE(output_len))
+	if (ALGORITHM_AES==algorithm && !VALID_AES_KEY_SIZE(output_len))
 		return EMV_ERROR;
 
 	uint8_t output_data[2*AES_BLOCK_SIZE];
@@ -1032,28 +1069,56 @@ int emv_derive_icc_session_key(uint8_t *icc_master_key,
 	memset(input_data, 0, AES_BLOCK_SIZE);
 	memcpy(input_data, atc, EMV_ATC_LENGTH);
 
-	for (int i =0; i<2; i++) {
-		input_data[EMV_ATC_LENGTH] = magic_number[i];
-		printf("Iteration %d\n", i+1);
+	/* initiate the keys */
+	DES_key_schedule des_key_a, des_key_b;
+	AES_KEY aes_key;
 
-		print_array("Input data for encryption: ", input_data, TDES_BLOCK_SIZE, "\n");
+	if (ALGORITHM_TDES==algorithm) {
+		DES_set_key_unchecked( (const_DES_cblock *) icc_master_key, &des_key_a);
+		DES_set_key_unchecked( (const_DES_cblock *) (icc_master_key+(TDES_KEY_LENGTH_1)), &des_key_b);
+	} else { /* assuming it can only be AES */
+		AES_set_encrypt_key(icc_master_key, icc_master_key_length<<3, &aes_key);
+	}
+
+	int iters = 2;
+
+	if (AES_BLOCK_SIZE==output_len && ALGORITHM_AES == algorithm) {
+		/* AES 128 bit key derivation has no magic number and a single iteration */
+		iters = 1;
+		magic_number[0] = 0;
+	}
+
+	for (int i =0; i<iters; i++) {
+		input_data[EMV_ATC_LENGTH] = magic_number[i];
+
+		print_array("\tInput data for encryption: ", input_data, TDES_BLOCK_SIZE, "\n");
 		if (algorithm==ALGORITHM_TDES)
 		{
-			DES_key_schedule key_a, key_b;
-			DES_set_key_unchecked( (const_DES_cblock *) icc_master_key, &key_a);
-			DES_set_key_unchecked( (const_DES_cblock *) (icc_master_key+(TDES_KEY_LENGTH_1)), &key_b);
 
-			DES_ecb2_encrypt( (DES_cblock*) input_data, (DES_cblock*)(output_data + (i*TDES_BLOCK_SIZE)), &key_a, &key_b, DES_ENCRYPT);
+			DES_ecb2_encrypt((DES_cblock* ) input_data,
+					(DES_cblock*)(output_data + (i*TDES_BLOCK_SIZE)), &des_key_a,
+					&des_key_b, DES_ENCRYPT);
 
-			print_array("Encryption output: ", output_data + (i*TDES_BLOCK_SIZE), TDES_BLOCK_SIZE, "\n");
+			print_array("\tEncryption output: ", output_data + (i*TDES_BLOCK_SIZE), TDES_BLOCK_SIZE, "\n");
 
 			error_code = ERR_get_error();
-			if (error_code)
-				return EMV_ERROR;
+			if (error_code) goto cleanup;
+			fix_parity(output_data, TDES_BLOCK_SIZE*2, PARITY_ODD);
+		} else {
+			AES_ecb_encrypt(input_data, output_data+(i*AES_BLOCK_SIZE), &aes_key, AES_ENCRYPT);
+			print_array("\tEncryption output: ", output_data + (i*AES_BLOCK_SIZE), AES_BLOCK_SIZE, "\n");
+			error_code = ERR_get_error();
+			if (error_code) goto cleanup;
 		}
-		fix_parity(output_data, TDES_BLOCK_SIZE*2, PARITY_ODD);
+		result = EMV_SUCCESS;
 	}
+
+	cleanup:
+	/* purge the keys */
+	PURGE(des_key_a);
+	PURGE(des_key_b);
+	PURGE(aes_key);
 	memcpy(output, output_data, output_len);
-	return EMV_SUCCESS;
+	return result;
 }
 

@@ -223,14 +223,49 @@ EMV_MASTER_KEY_TEST emv_master_key_tests [] = {
 		16
 	},
 	{
-		{4,4,2,7,8,0,8,0,0,1,1,1,2,2,2,3,3,3,7}, /* PAN */
+		{9,8,7,6,5,4,3,2,1,0,1,2,3,4,5,6,7,8,9}, /* PAN */
 		19, 							   		 /* PAN length */
 		{0, 1},									 /* CSN */
-		{ 0x23,0x15,0x20,0x8C,0x91,0x10,0xAD,0x40,0x23,0x15,0x20,0x8C,0x91,0x10,0xAD,0x40 }, /* key */
+		{ 0xDF,0xAD,0xBF,0xEF,0x01,0x23,0x45,0x67,0x89,0x86,0x64,0x43,0xDF,0xAD,0xBF,0xEF }, /* key */
 		16,
 		ALGORITHM_TDES,
-		{ 0x15,0x8C,0x5E,0x5E,0xD9,0x94,0x76,0x62,0x67,0x64,0x15,0xFD,0xA4,0x8A,0x67,0x7C },
+		{ 0xE5,0xAB,0x98,0xAB,0x5E,0x76,0xF7,0x57,0xFE,0xDC,0x7F,0x01,0x6E,0x5E,0x23,0x58 },
 		16
+	},
+	{
+		{9,0,1,2,3,4,5,4,3,2,1,0,1,2,3,2}, /* PAN */
+		16, 							   /* PAN length */
+		{0, 1},							  /* CSN */
+		{ 0xDF,0xAD,0xBF,0xEF,0x01,0x23,0x45,0x67,0x89,0x86,0x64,0x43,0xDF,0xAD,0xBF,0xEF }, /* key */
+		16,
+		ALGORITHM_AES,
+		{ 0x3A,0xD9,0x5F,0xE6,0xAD,0x75,0x06,0x2D,0xFC,0xF1,0x9D,0x83,0x45,0x04,0xAC,0x23 },
+		16
+	},
+	{
+		{9,0,1,2,3,4,5,4,3,2,1,0,1,2,3,2}, /* PAN */
+		16, 							   /* PAN length */
+		{0, 1},							  /* CSN */
+		{ 0xDF,0xAD,0xBF,0xEF,0x01,0x23,0x45,0x67,0x89,0x86,0x64,0x43,0xDF,0xAD,0xBF,0xEF }, /* key */
+		16,
+		ALGORITHM_AES,
+		{ 0x3A, 0xD9, 0x5F, 0xE6, 0xAD, 0x75, 0x06, 0x2D, 0xFC, 0xF1,
+		0x9D, 0x83, 0x45, 0x04, 0xAC, 0x23, 0x7A, 0x49, 0x82, 0x22, 0x92, 0x25,
+		0x7A, 0x16 },
+		24
+	},
+	{
+		{9,0,1,2,3,4,5,4,3,2,1,0,1,2,3,2}, /* PAN */
+		16, 							   /* PAN length */
+		{0, 1},							  /* CSN */
+		{ 0xDF,0xAD,0xBF,0xEF,0x01,0x23,0x45,0x67,0x89,0x86,0x64,0x43,0xDF,0xAD,0xBF,0xEF }, /* key */
+		16,
+		ALGORITHM_AES,
+		{ 0x3A, 0xD9, 0x5F, 0xE6, 0xAD, 0x75, 0x06, 0x2D, 0xFC,
+				0xF1, 0x9D, 0x83, 0x45, 0x04, 0xAC, 0x23, 0x7A, 0x49, 0x82,
+				0x22, 0x92, 0x25, 0x7A, 0x16, 0xF2, 0xB7, 0x61, 0x68, 0xB4,
+				0xE2, 0xB5, 0x74 },
+		32
 	}
 };
 
@@ -372,29 +407,35 @@ void test_dda() {
 			RSA_3, test_term_dyn_data, sizeof(test_term_dyn_data), &dda_details);
 }
 
-void test_master_key_derivation() {
-//	int emv_derive_icc_master_key(uint8_t *unpacked_pan, size_t unpacked_pan_len, uint8_t *unpacked_csn,
-//			uint8_t *encryption_key, size_t encryption_key_len, int algorithm, uint8_t *output, size_t output_len);
+void test_master_session_key_derivation() {
 	for (size_t c=0; c<sizeof(emv_master_key_tests)/sizeof(EMV_MASTER_KEY_TEST); c++) {
 		EMV_MASTER_KEY_TEST *p = emv_master_key_tests+c;
-		uint8_t buffer[AES_KEY_LENGTH_3];
+		uint8_t master[AES_KEY_LENGTH_3];
+		uint8_t atc[2] = {0,0};
 
+		print_test_step(2*c+1, "Master key derivation");
 		emv_derive_icc_master_key(p->unpacked_pan, p->unpacked_pan_len,
-				p->unpacked_csn, p->master_key, p->master_key_len, p->algorithm, buffer, p->output_len);
+				p->unpacked_csn, p->master_key, p->master_key_len, p->algorithm, master, p->output_len);
 
-		print_array("\tOutput: ", buffer, p->output_len, "\n");
+		print_array("\tOutput: ", master, p->output_len, "\n");
 		print_array("\tEtalon: ", p->output, p->output_len, "\n");
+
+		print_test_step(2*c+2, "Session key derivation");
+
+		uint8_t session[AES_KEY_LENGTH_3];
+		emv_derive_icc_session_key(master, p->output_len, p->algorithm, atc, session, p->output_len);
+		print_array("\tSession key: ", session, p->output_len, "\n");
 	}
 
 }
 
 TEST emv_tests[] = {
-//	{"Issuer PK recovery", test_issuer_pk, NULL},
-//	{"Issuer PK signing and recovery", test_issuer_e2e, NULL },
-//	{"ICC PK signing and recovery", test_icc_e2e, NULL},
-//	{"SDA signing and recovery", test_sda, NULL},
-//	{"DDA signing and recovery", test_dda, NULL},
-	{"EMV card master key derivation", test_master_key_derivation, NULL}
+	{"Issuer PK recovery", test_issuer_pk, NULL},
+	{"Issuer PK signing and recovery", test_issuer_e2e, NULL },
+	{"ICC PK signing and recovery", test_icc_e2e, NULL},
+	{"SDA signing and recovery", test_sda, NULL},
+	{"DDA signing and recovery", test_dda, NULL},
+	{"EMV card master and session key derivation", test_master_session_key_derivation, NULL}
 };
 
 
