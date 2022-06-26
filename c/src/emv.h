@@ -22,6 +22,15 @@
 #define EMV_MAX_ISS_KEY_LEN (EMV_MAX_CA_KEY_SIZE-36)
 #define EMV_MAX_ICC_KEY_LEN (EMV_MAX_CA_KEY_SIZE-42)
 
+#define EMV_ARQC_MIN_LEN 4
+#define EMV_ARQC_MAX_LEN 8
+
+#define EMV_ARPC_ARC_LEN 2
+#define EMV_ARPC_CSU_LEN 4
+#define EMV_ARPC_PAD_MAX_LEN 8
+
+#define EMV_ARPC_MAX_LEN (EMV_ARQC_MIN_LEN+EMV_ARPC_CSU_LEN+EMV_ARPC_PAD_MAX_LEN)
+
 #define EMV_LARGE_BUFFER 4096
 
 typedef struct tag_ISSUER_PK_DETAILS_HEADER {
@@ -229,6 +238,37 @@ int emv_sign_dynamic_data(uint8_t * icc_pub_key, size_t icc_pub_key_len,
 		uint8_t *icc_data, uint8_t *term_data, size_t term_data_len, DDA_DETAILS_HEADER *dda_details,
 		uint8_t *output);
 
+/**
+ * Generates ARQC
+ * @param session_key session key
+ * @param session_key_len length of the session key
+ * @param algorithm, TDES or AES
+ * @param arqc_data Input data for the ARQC
+ * @param arqc_data_len length of the input data
+ * @param output the output buffer
+ * @param output_len desired length
+ * @result returns EMV_ERROR or EMV_SUCCESS
+ */
+int emv_generate_arqc(uint8_t *session_key, size_t session_key_len,
+		int algorithm, uint8_t *arqc_data, size_t arqc_data_len,
+		uint8_t *output, size_t output_len);
+
+/*
+ * Generates ARPC using one of the two standard methods. If ARC is provided, uses Method 1. Otherwise, uses Method 2.
+ * @param arqc The ARQC value, assumed to be 8 byte length.
+ * @param arc The ARC is 2 byte length. If present, other input parameters are ignored.
+ * @param csu The Card Status Update, assumed to be 4 byte length.
+ * @param pad Proprietary Auth Data, 0 to 8 byte length.
+ * @param pad_len Length of the PAD
+ * @param key Encryption key
+ * @param key_len Length of the encryption key
+ * @param algorithm Algorithm to use.
+ * @param output Output buffer, must have enough digits
+ * @result EMV_ERROR or the actual length of the ARPC.
+ */
+int emv_generate_arpc(uint8_t *arqc, uint8_t *arc, uint8_t *csu, uint8_t *pad,
+		size_t pad_len, int algorithm, uint8_t *key, size_t key_len,
+		uint8_t *output);
 
 /* prints the issuer PK details header in a human-readable format */
 void print_issuer_pk_details_header(ISSUER_PK_DETAILS_HEADER* header);

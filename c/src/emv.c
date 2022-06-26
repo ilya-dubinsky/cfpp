@@ -9,6 +9,7 @@
 #include <openssl/sha.h>
 #include <openssl/des.h>
 #include <openssl/aes.h>
+#include <openssl/cmac.h>
 #include <openssl/err.h>
 
 #include <arpa/inet.h>
@@ -31,6 +32,9 @@
 #define EMV_HASH_ALGORITHM_SHA1				 0x01
 
 #define EMV_PK_ALGORIHTM_RSA  				 0x01
+
+#define EMV_ARQC_PADDING					 0x80
+
 
 typedef struct tag_CA_KEY {
 	uint8_t index;
@@ -137,6 +141,17 @@ static CA_KEY* find_ca_key (uint8_t index) {
 			return ca_key_table +i;
 	return NULL;
 }
+
+
+static int emv_derive_icc_master_key_aes(uint8_t *unpacked_input, size_t unpacked_input_len,
+		uint8_t *encryption_key, size_t encryption_key_len, uint8_t *output, size_t output_len);
+
+static int emv_derive_icc_master_key_des(uint8_t *unpacked_input, size_t unpacked_input_len,
+		uint8_t *encryption_key, uint8_t *output, size_t output_len);
+
+static int emv_compute_3des_mac(uint8_t* data, size_t data_len, uint8_t * key, uint8_t * output, size_t output_len);
+
+static int emv_compute_aes_cmac( uint8_t * data, size_t data_len, uint8_t * key, size_t key_len, uint8_t * output, size_t output_len ) ;
 
 /* prints the issuer PK details header in a human-readable format */
 void print_issuer_pk_details_header(ISSUER_PK_DETAILS_HEADER* header) {
@@ -384,11 +399,6 @@ cleanup:
 	return retval;
 }
 
-static int emv_derive_icc_master_key_aes(uint8_t *unpacked_input, size_t unpacked_input_len,
-		uint8_t *encryption_key, size_t encryption_key_len, uint8_t *output, size_t output_len);
-
-static int emv_derive_icc_master_key_des(uint8_t *unpacked_input, size_t unpacked_input_len,
-		uint8_t *encryption_key, uint8_t *output, size_t output_len);
 
 /**
  * Derive ICC Master key from an IMK
@@ -1122,3 +1132,229 @@ int emv_derive_icc_session_key(uint8_t *icc_master_key,
 	return result;
 }
 
+/**
+ * Generates ARQC
+ * @param session_key session key
+ * @param session_key_len length of the session key
+ * @param algorithm, TDES or AES
+ * @param arqc_data Input data for the ARQC
+ * @param arqc_data_len length of the input data
+ * @param output the output buffer
+ * @param output_len desired length
+ * @result returns EMV_ERROR or EMV_SUCCESS
+ */
+int emv_generate_arqc(uint8_t *session_key, size_t session_key_len,
+		int algorithm, uint8_t *arqc_data, size_t arqc_data_len,
+		uint8_t *output, size_t output_len) {
+	int result = EMV_ERROR;
+
+
+	/* Validate inputs */
+	if (!(session_key && session_key_len && arqc_data && arqc_data_len && output && output_len)) return result;
+
+	algorithm &= 0x1;
+
+	/* check key length */
+	if (ALGORITHM_TDES==algorithm && session_key_len!= TDES_KEY_LENGTH_2)
+		return EMV_ERROR;
+
+	if (ALGORITHM_AES==algorithm && !VALID_AES_KEY_SIZE(session_key_len))
+		return EMV_ERROR;
+
+	/* check output length */
+	if (output_len < EMV_ARQC_MIN_LEN || output_len > EMV_ARQC_MAX_LEN)
+		return EMV_ERROR;
+
+	print_array("\tInput ARQC data: ", arqc_data, arqc_data_len, "\n");
+
+	/* AES ARQC is a simple CMAC */
+	if (ALGORITHM_AES == algorithm) {
+		if (!emv_compute_aes_cmac(arqc_data, arqc_data_len, session_key, session_key_len, output, output_len)) goto cleanup;
+	} else {
+		if (!emv_compute_3des_mac( arqc_data, arqc_data_len, session_key, output, output_len)) goto cleanup;
+	}
+
+	/* done */
+	print_array("\tResult:", output, output_len, "\n");
+	result = EMV_SUCCESS;
+
+cleanup:
+
+	return result;
+}
+
+/*
+ * Generates ARPC using one of the two standard methods. If ARC is provided, uses Method 1. Otherwise, uses Method 2.
+ * @param arqc The ARQC value, assumed to be 8 byte length.
+ * @param arc The ARC is 2 byte length. If present, other input parameters are ignored.
+ * @param csu The Card Status Update, assumed to be 4 byte length.
+ * @param pad Proprietary Auth Data, 0 to 8 byte length.
+ * @param pad_len Length of the PAD
+ * @param key Encryption key
+ * @param key_len Length of the encryption key
+ * @param algorithm Algorithm to use.
+ * @param output Output buffer, must have enough digits
+ * @result EMV_ERROR or the actual length of the ARPC.
+ */
+int emv_generate_arpc(uint8_t *arqc, uint8_t *arc, uint8_t *csu, uint8_t *pad,
+		size_t pad_len, int algorithm, uint8_t *key, size_t key_len,
+		uint8_t *output) {
+	int result = EMV_ERROR;
+	/* validate the input */
+	if (! (arqc && output && (arc || (csu&&pad)))) return EMV_ERROR;
+	DES_key_schedule des_key_a, des_key_b;
+	AES_KEY aes_key;
+
+	algorithm &= 0x1;
+
+	if (ALGORITHM_AES == algorithm && !(VALID_AES_KEY_SIZE(key_len))) return EMV_ERROR;
+	if (ALGORITHM_TDES == algorithm && (TDES_KEY_LENGTH_2!=key_len)) return EMV_ERROR;
+
+	uint8_t buffer [EMV_ARPC_MAX_LEN];
+	memset( buffer, 0, sizeof(buffer));
+
+	if (arc) {
+		/* ARPC Method 1 */
+		memcpy(buffer, arc, EMV_ARPC_ARC_LEN);
+		xor_array(buffer, arqc, buffer, EMV_ARQC_MAX_LEN);
+		print_array("\tMethod 1 input: ", buffer, sizeof(buffer), "\n");
+		if (ALGORITHM_TDES==algorithm) {
+			DES_set_key_unchecked((const_DES_cblock*)key, &des_key_a);
+			DES_set_key_unchecked((const_DES_cblock*)key + TDES_KEY_LENGTH_1, &des_key_b);
+			DES_ecb2_encrypt((const_DES_cblock*) buffer, (DES_cblock*)output, &des_key_a, &des_key_b, DES_ENCRYPT);
+			result = TDES_BLOCK_SIZE;
+		} else {
+			/* AES */
+			AES_set_encrypt_key(key, key_len*8, &aes_key);
+			AES_ecb_encrypt(buffer, output, &aes_key, AES_ENCRYPT);
+			result = AES_BLOCK_SIZE;
+		}
+	} else {
+		/* ARPC Method 2 */
+		size_t input_len = 0;
+		memcpy(buffer, arqc, EMV_ARQC_MAX_LEN);
+		input_len += EMV_ARQC_MAX_LEN;
+
+		memcpy(buffer+input_len, csu, EMV_ARPC_CSU_LEN);
+		input_len += EMV_ARPC_CSU_LEN;
+
+		memcpy(buffer+input_len, pad, pad_len);
+		input_len += pad_len;
+		print_array("\tMethod 2 input: ", buffer, input_len, "\n");
+		/* place CSU and PAD in the output buffer */
+		memcpy(output + EMV_ARQC_MIN_LEN, csu, EMV_ARPC_CSU_LEN);
+		memcpy(output + EMV_ARQC_MIN_LEN + EMV_ARPC_CSU_LEN, pad, pad_len);
+		if (ALGORITHM_TDES == algorithm) {
+			emv_compute_3des_mac(buffer, input_len, key, output, EMV_ARQC_MIN_LEN);
+		} else {
+			emv_compute_aes_cmac(buffer, input_len, key, key_len, output, EMV_ARQC_MIN_LEN);
+		}
+		result = EMV_ARQC_MIN_LEN + EMV_ARPC_CSU_LEN + pad_len;
+	}
+
+	print_array("\tResult: ", output, result, "\n");
+
+	PURGE(des_key_a);
+	PURGE(des_key_b);
+	return result;
+}
+
+/**
+ * Computes the AES CMAC
+ * Returns EMV_ERROR or EMV_SUCCESS.
+ * @param data data to sign
+ * @param data_len length of the data to sign
+ * @param key encryption key
+ * @param key_len encryption key length
+ * @param output output buffer
+ * @param output_len desired length of the output
+ * @result EMV_ERROR on error and EMV_SUCCESS on success
+ */
+
+static int emv_compute_aes_cmac( uint8_t * data, size_t data_len, uint8_t * key, size_t key_len, uint8_t * output, size_t output_len ) {
+	int result = EMV_ERROR;
+
+	/* Validate inputs */
+	if (! (data && data_len && key && key_len && output && output_len)) return EMV_ERROR;
+
+	CMAC_CTX * cmac_ctx = NULL;
+	uint8_t output_buffer[AES_BLOCK_SIZE];
+	/* Compute the CMAC */
+	EVP_CIPHER * cipher;
+	switch (key_len ) {
+	case AES_KEY_LENGTH_3:
+		cipher = (EVP_CIPHER *) EVP_aes_256_cbc();
+		break;
+	case AES_KEY_LENGTH_2:
+		cipher = (EVP_CIPHER *) EVP_aes_192_cbc();
+		break;
+	default:
+		cipher = (EVP_CIPHER *) EVP_aes_128_cbc();
+	}
+
+	cmac_ctx = CMAC_CTX_new();
+	if (!CMAC_Init(cmac_ctx, key, key_len, cipher, NULL)) goto cleanup;
+
+	if (!CMAC_Update(cmac_ctx, data, data_len)) goto cleanup;
+
+	size_t outlen;
+	if (!CMAC_Final(cmac_ctx, output_buffer, &outlen)) goto cleanup;
+	print_array("\tCMAC output:", output_buffer, outlen, "\n");
+
+	/* copy the desired number of bytes */
+	memcpy(output, output_buffer, output_len);
+
+cleanup:
+	if (cmac_ctx) CMAC_CTX_free(cmac_ctx);
+
+	return result;
+}
+
+/**
+ * Computes the 3DES MAC (CBC-MAC with padding).
+ * Assumes that the key is of the right length, returns EMV_ERROR or EMV_SUCCESS.
+ * @param data data to sign
+ * @param data_len length of the data to sign
+ * @param key encryption key
+ * @param output output buffer
+ * @param output_len desired length of the output
+ * @result EMV_ERROR on error and EMV_SUCCESS on success
+ */
+static int emv_compute_3des_mac(uint8_t* data, size_t data_len, uint8_t * key, uint8_t * output, size_t output_len) {
+	/* validate inputs */
+	if (!(data&& data_len && key && output && output_len)) return EMV_ERROR;
+
+	int result = EMV_ERROR;
+
+	DES_key_schedule key_a, key_b;
+	uint8_t *padding_buffer = NULL;
+
+	size_t padded_data_size =  TDES_BLOCK_SIZE*((data_len+1)/TDES_BLOCK_SIZE + !!((data_len+1 )%TDES_BLOCK_SIZE) );
+
+	/* Pad the data */
+	padding_buffer = calloc(padded_data_size, sizeof(uint8_t));
+	memcpy(padding_buffer, data, data_len);
+
+	padding_buffer[data_len] = EMV_ARQC_PADDING;
+	print_array("\tPadded input: ", padding_buffer, padded_data_size, "\n");
+
+	/* perform CBC encryption with the key */
+	DES_set_key_unchecked( (const_DES_cblock*) key, &key_a);
+	DES_set_key_unchecked( (const_DES_cblock*) (key+TDES_KEY_LENGTH_1), &key_b);
+	/* IV is all zeros */
+	uint8_t iv[TDES_BLOCK_SIZE];
+	memset(iv, 0, TDES_BLOCK_SIZE);
+
+	/* encrypt */
+	DES_ede2_cbc_encrypt(padding_buffer, padding_buffer, padded_data_size,
+			&key_a, &key_b, (DES_cblock* )iv, DES_ENCRYPT);
+
+	/* copy last block to the output */
+	memcpy(output, padding_buffer + (padded_data_size-TDES_BLOCK_SIZE), output_len);
+	result = EMV_SUCCESS;
+
+	if (padding_buffer) free(padding_buffer);
+	PURGE(key_a);
+	PURGE(key_b);
+	return result;
+}
