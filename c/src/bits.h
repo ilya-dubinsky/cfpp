@@ -20,6 +20,7 @@
 
 #define BASE64_NO_PADDING 0
 #define BASE64_PADDING 1
+
 /**
  * Count trailing zero bits of a byte value.
  * @param v the byte value
