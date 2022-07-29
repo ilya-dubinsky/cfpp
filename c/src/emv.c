@@ -355,7 +355,7 @@ int emv_recover_icc_key(uint8_t *icc_cert, size_t icc_cert_len,
 	/* Prepare the hash function input */
 
 	size_t hash_input_len = sizeof(ICC_PK_DETAILS_HEADER) - 1
-			+ header->icc_pk_len + header->icc_pk_exponent_len
+			+ decrypted_cert_len + header->icc_pk_exponent_len
 			+ header->icc_pk_exponent_len
 			+ static_data_len;
 	size_t hash_ptr = 0;
@@ -889,6 +889,7 @@ int emv_sign_icc_public_key(uint8_t * issuer_pub_key, size_t issuer_pub_key_len,
 		icc_pk_cert_len = icc_pk_cert_max_len;
 	} else {
 		icc_pk_cert_len = icc_pk_len;
+		*output_remainder_len = 0;
 	}
 	/* copy the PK */
 	memcpy (buffer+buffer_ptr, icc_pk, icc_pk_cert_len);
