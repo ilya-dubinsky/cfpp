@@ -1,8 +1,9 @@
 LIBS := -lcrypto -lssl
 
-LIB_PATH := /usr/local/opt/openssl@1.1/lib
-INCLUDES := /usr/local/opt/openssl@1.1/include -I./src
-COMPILE_FLAGS := -std=c99 -I$(INCLUDES) -O0 -g3 -pedantic -Wall -Wextra -c -fmessage-length=0 -MMD -MP 
+LIB_PATH := /opt/homebrew/opt/openssl@1.1/lib
+INCLUDES := /opt/homebrew/opt/openssl@1.1/include -I./src
+COMPILE_FLAGS := -target arm64-apple-macos12 -std=c99 -I$(INCLUDES) -O0 -g3 -pedantic -Wall -Wextra -c -fmessage-length=0 -MMD -MP 
+LINK_FLAGS := -target arm64-apple-macos12
 
 SOURCES=$(wildcard src/*.c)
 HEADERS=$(patsubst src/%.c, src/%.h, $(SOURCES))
@@ -17,7 +18,7 @@ TEST_TARGETS=$(patsubst test/%.c, bin/%, $(TEST_SOURCES))
 all: cfpp tests
 
 cfpp: $(OBJECTS) bin/cfpp.o
-	gcc -L$(LIB_PATH) $(LIBS) -o "bin/CFPP" bin/cfpp.o $(OBJECTS) 
+	gcc -L$(LIB_PATH) $(LIBS) $(LINK_FLAGS) -o "bin/CFPP" bin/cfpp.o $(OBJECTS) 
 	@echo $(TEST_TARGETS): $(TEST_OBJECTS) $(OBJECTS)
 	@echo $(TEST_OBJECTS)
 	@echo $(TEST_TARGETS)
@@ -26,7 +27,7 @@ cfpp: $(OBJECTS) bin/cfpp.o
 tests: $(TEST_TARGETS)
 
 $(TEST_TARGETS): $(TEST_OBJECTS) $(OBJECTS)
-	gcc -L$(LIB_PATH) $(LIBS) -o "$@"  "$@.o" $(OBJECTS)
+	gcc -L$(LIB_PATH)  $(LINK_FLAGS) $(LIBS) -o "$@"  "$@.o" $(OBJECTS)
 
 $(TEST_OBJECTS): $(TEST_SOURCES)
 
