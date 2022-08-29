@@ -2,4 +2,4 @@
 
 The repository contains code examples for the "Cryptography for Payment Professionals" book.
 
-The code examples are provided in three languages, C, Python, and Java.
+C implementations of functions, as mentioned in the book, are located in c/src/. The tests are in the c/test folder.
