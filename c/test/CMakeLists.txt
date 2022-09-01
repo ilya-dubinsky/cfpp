@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 3.10)
 project (cfpp_test)
 
 FILE(GLOB SOURCES *.c)
-find_package(OpenSSL 1.1)
+find_package(OpenSSL 1.1.1)
 
 
 foreach(SOURCE_FILE ${SOURCES})

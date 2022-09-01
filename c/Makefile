@@ -1,3 +1,5 @@
+## This will have to go at some point
+
 LIBS := -lcrypto -lssl
 
 # Installation path to the OpenSSL library 
