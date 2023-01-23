@@ -247,10 +247,11 @@ int encrypt_key_variant( uint8_t * key, uint8_t key_len, uint8_t *kek, uint8_t* 
  		kek[TDES_KEY_LENGTH_1]^=variant[i];
  		print_array("\t\tKEK after applying the variant: ", kek, TDES_KEY_LENGTH_2, "\n");
  		/* Initiate key schedule */
- 		DES_set_key_unchecked((DES_cblock*)kek, &(kek_ks[1]));
+ 		DES_set_key_unchecked((DES_cblock*) (kek+TDES_KEY_LENGTH_1), &(kek_ks[1]));
  		/* Encrypt the appropriate block */
  		DES_ecb2_encrypt( (DES_cblock*) (key+TDES_BLOCK_SIZE*i), (DES_cblock*) (output+TDES_BLOCK_SIZE*i), kek_ks, kek_ks+1, DES_ENCRYPT);
  		/* remove variant from the first byte of the second half of the key */
+
  		kek[TDES_KEY_LENGTH_1]^=variant[i];
  	}
  	result = PIN_OK;
