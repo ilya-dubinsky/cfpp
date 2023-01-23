@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <string.h>
 
-
 /* The macro is not checking types, so it is for internal use only */
 #define PACK_BCD(x,y)  (( ((x)&0xF)<<4) | ((y)&0xF))
 
@@ -198,7 +197,7 @@ size_t even_parity_16 (uint16_t v) {
 
 
 /**
- * Calculate even parity bit of an 16-bit value
+ * Calculate even parity bit of a 32-bit value
  * @param v 32-bit value
  * @result 1 if the number of set bits in v is odd
  */
