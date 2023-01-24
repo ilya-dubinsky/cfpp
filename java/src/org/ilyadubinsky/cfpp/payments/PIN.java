@@ -1,4 +1,4 @@
-package org.ilyadubinsky.cfpp.utils;
+package org.ilyadubinsky.cfpp.payments;
 
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
@@ -14,10 +14,18 @@ import javax.crypto.spec.SecretKeySpec;
 
 import org.ilyadubinsky.cfpp.crypto.Constants;
 import org.ilyadubinsky.cfpp.crypto.SymmetricAlgorithms;
+import org.ilyadubinsky.cfpp.utils.BitOps;
+import org.ilyadubinsky.cfpp.utils.TestIO;
+
+import lombok.extern.java.Log;
+
+@Log
 
 public class PIN {
 
 	public static final int PIN_BLOCK_SIZE_0123_N = 16; // Formats 0 to 3, size in nibbles
+	public static final int PIN_BLOCK_SIZE_0123_B = PIN_BLOCK_SIZE_0123_N/2; // Formats 0 to 3, size in bytes
+
 	public static final int PIN_BLOCK_SIZE_4_N = 32; // Format 4, length of a single block in nibbles
 	public static final int PIN_BLOCK_SIZE_4_B = PIN_BLOCK_SIZE_4_N / 2; // Format 4 size in bytes
 
@@ -72,6 +80,7 @@ public class PIN {
 
 		case 0:
 		case 2:
+			log.fine(" Block 1: " + TestIO.printByteArray(BitOps.packBCD(unpackedBuffer, PIN_BLOCK_SIZE_0123_B, false)));
 			BitOps.padArray(unpackedBuffer, p, PIN_BLOCK_SIZE_0123_N - p, (byte) 0x0F);
 			break;
 
@@ -81,6 +90,7 @@ public class PIN {
 				int padLen = PIN_BLOCK_SIZE_0123_N - p > uniqueID.length ? uniqueID.length : PIN_BLOCK_SIZE_0123_N - p;
 				System.arraycopy(uniqueID, 0, unpackedBuffer, p, padLen);
 				p += padLen;
+				log.fine(" Block 1: " + TestIO.printByteArray(BitOps.packBCD(unpackedBuffer, PIN_BLOCK_SIZE_0123_B, false)));
 				if (p == PIN_BLOCK_SIZE_0123_N)
 					break;
 			}
@@ -108,7 +118,7 @@ public class PIN {
 			int panDigitsToCopy = pan.length > 12 ? 12 : pan.length - 1;
 			System.arraycopy(pan, pan.length - 1 - panDigitsToCopy, block2, 16 - panDigitsToCopy, panDigitsToCopy);
 
-			System.out.println(" Block 2: " + TestIO.printByteArray(BitOps.packBCD(block2, 8, false)));
+			log.fine(" Block 2: " + TestIO.printByteArray(BitOps.packBCD(block2, 8, false)));
 			/* XOR the PIN block */
 			unpackedBuffer = BitOps.xorArray(unpackedBuffer, block2);
 
@@ -116,6 +126,11 @@ public class PIN {
 		return BitOps.packBCD(unpackedBuffer, unpackedBuffer.length >> 1, false);
 	}
 
+	/**
+	 * Utility method to create PIN block format 4 second block
+	 * @param pan PAN number, unpacked
+	 * @return The unpacked block
+	 */
 	protected static byte[] makeFormat4Block2(byte[] pan) {
 
 		byte[] block2 = new byte[PIN_BLOCK_SIZE_0123_N * 2];
@@ -149,9 +164,9 @@ public class PIN {
 				|| rawPINBlock4.length != PIN_BLOCK_SIZE_4_N)
 			return null;
 
-		Cipher c = Cipher.getInstance("AES/CBC/NoPadding");
+		Cipher c = Cipher.getInstance(Constants.AES_CBC_NO_PADDING);
 
-		SecretKeySpec encKey = new SecretKeySpec(key, "AES");
+		SecretKeySpec encKey = new SecretKeySpec(key, Constants.AES_KEY_ALGORITHM);
 
 		IvParameterSpec iv = new IvParameterSpec(new byte[Constants.AES_BLOCK_SIZE_B]);
 
@@ -194,12 +209,12 @@ public class PIN {
 		System.arraycopy(makeFormat4Block2(pan), 0, unpackedBuffer, PIN_BLOCK_SIZE_4_N, PIN_BLOCK_SIZE_4_N);
 		byte[] packedBuffer = BitOps.packBCD(unpackedBuffer, PIN_BLOCK_SIZE_4_N, false);
 
-		System.out.println("Method input: " + TestIO.printByteArray(epb));
-		System.out.println("Cipher input: " + TestIO.printByteArray(packedBuffer));
+		log.fine("Method input: " + TestIO.printByteArray(epb));
+		log.fine("Cipher input: " + TestIO.printByteArray(packedBuffer));
 
 		/* CBC deciphering */
-		Cipher c = Cipher.getInstance("AES/CBC/NoPadding");
-		SecretKeySpec encKey = new SecretKeySpec(key, "AES");
+		Cipher c = Cipher.getInstance(Constants.AES_CBC_NO_PADDING);
+		SecretKeySpec encKey = new SecretKeySpec(key, Constants.AES_KEY_ALGORITHM);
 
 		IvParameterSpec iv = new IvParameterSpec(new byte[Constants.AES_BLOCK_SIZE_B]);
 
@@ -221,7 +236,7 @@ public class PIN {
 		 */
 		if (variant.length <= key.length/Constants.DES_KEY_SIZE_1_B) return null;
 		
-		System.out.println("KEK prior to variants: " + TestIO.printByteArray(kek));
+		log.fine("KEK prior to variants: " + TestIO.printByteArray(kek));
 		
 		byte[] buffer = new byte[key.length];
 		
