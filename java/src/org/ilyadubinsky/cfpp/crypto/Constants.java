@@ -25,6 +25,9 @@ public class Constants {
 	public static final String DES_ECB_NO_PADDING_ALGORITHM = "DES/ECB/NoPadding";
 	public static final String AES_ECB_NO_PADDING = "AES/ECB/NoPadding";
 
+	public static final String HMAC_SHA256 = "HmacSHA256";
+	public static final String HMAC_SHA1 = "HmacSHA1";
+
 	/* constants used to instantiate keys */
 	public static final String DSA_KEY_ALGORITHM = "DSA";
 	public static final String DES_KEY_ALGORITHM = "DES";

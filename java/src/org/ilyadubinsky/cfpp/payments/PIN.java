@@ -15,7 +15,7 @@ import javax.crypto.spec.SecretKeySpec;
 import org.ilyadubinsky.cfpp.crypto.Constants;
 import org.ilyadubinsky.cfpp.crypto.SymmetricAlgorithms;
 import org.ilyadubinsky.cfpp.utils.BitOps;
-import org.ilyadubinsky.cfpp.utils.TestIO;
+import org.ilyadubinsky.cfpp.utils.IO;
 
 import lombok.extern.java.Log;
 
@@ -80,7 +80,7 @@ public class PIN {
 
 		case 0:
 		case 2:
-			log.fine(" Block 1: " + TestIO.printByteArray(BitOps.packBCD(unpackedBuffer, PIN_BLOCK_SIZE_0123_B, false)));
+			log.fine(" Block 1: " + IO.printByteArray(BitOps.packBCD(unpackedBuffer, PIN_BLOCK_SIZE_0123_B, false)));
 			BitOps.padArray(unpackedBuffer, p, PIN_BLOCK_SIZE_0123_N - p, (byte) 0x0F);
 			break;
 
@@ -90,7 +90,7 @@ public class PIN {
 				int padLen = PIN_BLOCK_SIZE_0123_N - p > uniqueID.length ? uniqueID.length : PIN_BLOCK_SIZE_0123_N - p;
 				System.arraycopy(uniqueID, 0, unpackedBuffer, p, padLen);
 				p += padLen;
-				log.fine(" Block 1: " + TestIO.printByteArray(BitOps.packBCD(unpackedBuffer, PIN_BLOCK_SIZE_0123_B, false)));
+				log.fine(" Block 1: " + IO.printByteArray(BitOps.packBCD(unpackedBuffer, PIN_BLOCK_SIZE_0123_B, false)));
 				if (p == PIN_BLOCK_SIZE_0123_N)
 					break;
 			}
@@ -118,7 +118,7 @@ public class PIN {
 			int panDigitsToCopy = pan.length > 12 ? 12 : pan.length - 1;
 			System.arraycopy(pan, pan.length - 1 - panDigitsToCopy, block2, 16 - panDigitsToCopy, panDigitsToCopy);
 
-			log.fine(" Block 2: " + TestIO.printByteArray(BitOps.packBCD(block2, 8, false)));
+			log.fine(" Block 2: " + IO.printByteArray(BitOps.packBCD(block2, 8, false)));
 			/* XOR the PIN block */
 			unpackedBuffer = BitOps.xorArray(unpackedBuffer, block2);
 
@@ -209,8 +209,8 @@ public class PIN {
 		System.arraycopy(makeFormat4Block2(pan), 0, unpackedBuffer, PIN_BLOCK_SIZE_4_N, PIN_BLOCK_SIZE_4_N);
 		byte[] packedBuffer = BitOps.packBCD(unpackedBuffer, PIN_BLOCK_SIZE_4_N, false);
 
-		log.fine("Method input: " + TestIO.printByteArray(epb));
-		log.fine("Cipher input: " + TestIO.printByteArray(packedBuffer));
+		log.fine("Method input: " + IO.printByteArray(epb));
+		log.fine("Cipher input: " + IO.printByteArray(packedBuffer));
 
 		/* CBC deciphering */
 		Cipher c = Cipher.getInstance(Constants.AES_CBC_NO_PADDING);
@@ -236,7 +236,7 @@ public class PIN {
 		 */
 		if (variant.length <= key.length/Constants.DES_KEY_SIZE_1_B) return null;
 		
-		log.fine("KEK prior to variants: " + TestIO.printByteArray(kek));
+		log.fine("KEK prior to variants: " + IO.printByteArray(kek));
 		
 		byte[] buffer = new byte[key.length];
 		

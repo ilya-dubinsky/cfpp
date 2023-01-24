@@ -14,7 +14,7 @@ import javax.crypto.spec.SecretKeySpec;
 import org.ilyadubinsky.cfpp.crypto.Constants;
 import org.ilyadubinsky.cfpp.crypto.Utils;
 import org.ilyadubinsky.cfpp.utils.BitOps;
-import org.ilyadubinsky.cfpp.utils.TestIO;
+import org.ilyadubinsky.cfpp.utils.IO;
 
 import lombok.extern.java.Log;
 
@@ -51,7 +51,7 @@ public class Legacy {
 		byte[] block1 = BitOps.packBCD(unpackedPAN, 8, true);
 		byte[] block1Output = new byte[8];
 
-		log.log(Level.FINE, "Input block 1: " + TestIO.printByteArray(block1));
+		log.log(Level.FINE, "Input block 1: " + IO.printByteArray(block1));
 
 		byte[] block2Input = new byte[7];
 		System.arraycopy(expiry, 0, block2Input, 0, 4);
@@ -71,20 +71,20 @@ public class Legacy {
 		c.init(Cipher.ENCRYPT_MODE, keyCVKA);
 		c.doFinal(block1, 0, 8, block1Output);
 
-		log.log(Level.FINE, "Output step 1: " + TestIO.printByteArray(block1Output));
+		log.log(Level.FINE, "Output step 1: " + IO.printByteArray(block1Output));
 
-		log.log(Level.FINE, "Input block 2: " + TestIO.printByteArray(block2));
+		log.log(Level.FINE, "Input block 2: " + IO.printByteArray(block2));
 
 		/* xor */
 		block2 = BitOps.xorArray(block2, block1Output);
-		log.log(Level.FINE, "After XOR: " + TestIO.printByteArray(block2));
+		log.log(Level.FINE, "After XOR: " + IO.printByteArray(block2));
 		/* encrypt block 2 in EDE mode */
 		c = Cipher.getInstance(Constants.TDES_ECB_NO_PADDING_ALGORITHM);
 
 		byte[] block2Output = new byte[8];
 		c.init(Cipher.ENCRYPT_MODE, keyCVKB);
 		c.doFinal(block2, 0, 8, block2Output);
-		log.log(Level.FINE, "After 2nd encryption: " + TestIO.printByteArray(block2Output));
+		log.log(Level.FINE, "After 2nd encryption: " + IO.printByteArray(block2Output));
 		
 		/* clean up the allocated data */
 		Utils.purgeArray(cvkFull);
@@ -124,7 +124,7 @@ public class Legacy {
 		System.arraycopy(unpackedPIN, 0, unpackedInput, 12, 4);
 		byte[] packedInput = BitOps.packBCD(unpackedInput, 8, false);
 
-		log.log(Level.FINE, "Packed input for PVV: " + TestIO.printByteArray(packedInput));
+		log.log(Level.FINE, "Packed input for PVV: " + IO.printByteArray(packedInput));
 
 		byte[] pvk = new byte[24];
 		System.arraycopy(pvkA, 0, pvk, 0, 8);
@@ -140,7 +140,7 @@ public class Legacy {
 		
 		Utils.purgeArray(pvk);
 
-		log.log(Level.FINE, "PVV after encryption: " + TestIO.printByteArray(encOutput));
+		log.log(Level.FINE, "PVV after encryption: " + IO.printByteArray(encOutput));
 
 		return BitOps.decimalizeVector(encOutput, desiredLength);
 

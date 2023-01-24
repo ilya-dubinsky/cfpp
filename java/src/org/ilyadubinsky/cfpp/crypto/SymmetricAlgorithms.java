@@ -9,7 +9,7 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
 
-import org.ilyadubinsky.cfpp.utils.TestIO;
+import org.ilyadubinsky.cfpp.utils.IO;
 
 public class SymmetricAlgorithms {
 
@@ -81,8 +81,8 @@ public class SymmetricAlgorithms {
 
 		byte[] tdesKey = getFullLengthTDESKey(key);
 
-		System.out.println("Input: " + TestIO.printByteArray(plainInput));
-		System.out.println("Full key: " + TestIO.printByteArray(tdesKey));
+		System.out.println("Input: " + IO.printByteArray(plainInput));
+		System.out.println("Full key: " + IO.printByteArray(tdesKey));
 
 		Cipher c = Cipher.getInstance(Constants.TDES_ECB_NO_PADDING_ALGORITHM);
 
@@ -114,8 +114,8 @@ public class SymmetricAlgorithms {
 
 		byte[] tdesKey = getFullLengthTDESKey(key);
 
-		System.out.println("Input: " + TestIO.printByteArray(cipherInput));
-		System.out.println("Full key: " + TestIO.printByteArray(tdesKey));
+		System.out.println("Input: " + IO.printByteArray(cipherInput));
+		System.out.println("Full key: " + IO.printByteArray(tdesKey));
 
 		Cipher c = Cipher.getInstance(Constants.TDES_ECB_NO_PADDING_ALGORITHM);
 

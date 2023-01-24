@@ -12,6 +12,9 @@ import java.security.spec.DSAPrivateKeySpec;
 import java.security.spec.DSAPublicKeySpec;
 import java.security.spec.InvalidKeySpecException;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+
 import lombok.extern.java.Log;
 
 @Log
@@ -99,5 +102,30 @@ public class MessageAuthenticationAlgorithms {
 		
 		return s.verify(signature);
 		
+	}
+	
+	/**
+	 * Computes the HMAC value 
+	 * @param image The image to sign
+	 * @param key The secret key 
+	 * @return Byte value of the HMAC, or null if the inputs are wrong
+	 * @throws NoSuchAlgorithmException
+	 * @throws InvalidKeyException
+	 */
+	public static byte[] computeHMAC( byte [] image, byte[] key ) throws NoSuchAlgorithmException, InvalidKeyException {
+		if (null == image || null == key )
+			return null;
+		
+		/* wrap the key */
+		SecretKeySpec hmacKeySpec = new SecretKeySpec(key, Constants.HMAC_SHA1);
+
+		/* instantiate the algorithm */
+		Mac mac = Mac.getInstance(Constants.HMAC_SHA1);
+		
+		mac.init(hmacKeySpec);
+		
+		mac.update(image);
+		
+		return mac.doFinal();
 	}
 }

@@ -1,6 +1,6 @@
 package org.ilyadubinsky.cfpp.utils;
 
-public class TestIO {
+public class IO {
 
 	/* 
 	 * bits
