@@ -1,4 +1,4 @@
-package org.ilyadubinsky.cfpp.utilis;
+package org.ilyadubinsky.cfpp.utils;
 
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;

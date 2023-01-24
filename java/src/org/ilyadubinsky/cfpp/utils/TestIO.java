@@ -1,4 +1,4 @@
-package org.ilyadubinsky.cfpp.utilis;
+package org.ilyadubinsky.cfpp.utils;
 
 public class TestIO {
 

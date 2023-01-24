@@ -9,7 +9,7 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
 
-import org.ilyadubinsky.cfpp.utilis.TestIO;
+import org.ilyadubinsky.cfpp.utils.TestIO;
 
 public class SymmetricAlgorithms {
 
