@@ -12,6 +12,9 @@ import java.security.spec.DSAPrivateKeySpec;
 import java.security.spec.DSAPublicKeySpec;
 import java.security.spec.InvalidKeySpecException;
 
+import lombok.extern.java.Log;
+
+@Log
 public class MessageAuthenticationAlgorithms {
 
 	/**
@@ -44,10 +47,13 @@ public class MessageAuthenticationAlgorithms {
 		Signature s = Signature.getInstance(Constants.DSA_SHA256_ALGORITHM);
 		
 		/* this is a very, very DANGEROUS workaround for the k collision issue that's not handled in the Java JDK */
-		if (p.bitLength()<500) /* However, you shouldn't be using keys this small anyway */
+		if (p.bitLength()<500) {/* However, you shouldn't be using keys this small anyway */
+			log.severe("**** DANGER **** DSA signature is calculated with a very short key and without randomization");
 			s.initSign(privKey, new Utils.DisableRandom());
-		else
+		}
+		else {
 			s.initSign(privKey);
+		}
 		
 		/* sign the image */
 		s.update(image);

@@ -4,6 +4,8 @@ import java.security.SecureRandom;
 import java.security.SecureRandomParameters;
 import java.util.Arrays;
 
+import lombok.extern.java.Log;
+
 public class Utils {
 
 	/**
@@ -12,11 +14,16 @@ public class Utils {
 	 * and is never to be used in real life.
 	 *
 	 */
+	@Log
 	public static class DisableRandom extends SecureRandom {
 
 		private static final long serialVersionUID = -5028778734053659236L;
 
 		private static final byte TRUE_RANDOM_NUMBER = 6;
+		
+		public DisableRandom() {
+			log.severe("**** DANGER **** Secure Random Number Generator was disabled, DO NOT USE IN LIVE ENVIRONMENT");
+		}
 
 		@Override
 		public void nextBytes(byte[] bytes) {
