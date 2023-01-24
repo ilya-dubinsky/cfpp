@@ -1,0 +1,357 @@
+
+/**
+ * Derives the initial key.
+ * @param bdk the Base Derivation Key
+ * @param bdk_len the Base Derivation Key lenght
+ * @param ksn the Key Serial Number
+ * @param algorithm TDES or AES
+ * @param output the output buffer
+ */
+int dukpt_derive_initial_key(uint8_t* bdk, size_t bdk_len, uint8_t * ksn, int algorithm, uint8_t * output);
+
+/** Derives an intermediate key based on a KSN.
+ * @param initial_key the IK. Assumed to be a double-length TDES key.
+ * @param ksn the KSN. Assumed to be of the correct length.
+ * @param output the output buffer. Assumed to be sufficient for a double-length TDES key.
+ * @result DUKPT_SUCCESS or DUKPT_ERROR
+ */
+int dukpt_des_derive_intermediate_key (uint8_t * initial_key, uint8_t * ksn, uint8_t *output );
+
+/** Generates a worker key from an intermediate key.
+ * @param intermediate_key intermediate key, assumed a double-length TDES key
+ * @param key_type type of key to generate
+ * @output output buffer
+ * @result DUKPT_SUCCESS if successful or DUKPT_ERROR otherwise
+ */
+int dukpt_des_derive_worker_key (uint8_t * intermediate_key, int key_type, uint8_t * output );
+
+/** Derives the initial key based on the BDK.
+ * @param base_key the input key
+ * @param base_key_len the input key length
+ * @param algo desired algorithm for the key
+ * @param KSN the ksn
+ * @param output buffer for the key output, size is according to the desired algorithm
+ * @result actual key length if successful, DUKPT_ERROR otherwise
+ */
+int dukpt_aes_derive_initial_key(uint8_t *base_key, size_t base_key_len,
+		uint16_t algo, uint8_t *ksn, uint8_t *output);
+
+/** Derives an intermediate key based on a KSN.
+ * @param initial_key the IK. Assumed to be an 128-bit AES key.
+ * @param ksn the KSN. Assumed to be of the correct length.
+ * @param output the output buffer. Assumed to be sufficient for an 128-bit AES key.
+ * @result DUKPT_SUCCESS or DUKPT_ERROR
+ */
+int dukpt_aes_derive_intermediate_key (uint8_t * initial_key, uint8_t * ksn, uint8_t *output );
+
+/**
+ * Derives a worker key from AES 128 for an AES 128 encryption algorithm.
+ * @param inter_key an intermediate key
+ * @param usage key usage
+ * @param ksn current ksn
+ * @param output output buffer
+ * @result actual key length or DUKPT_ERROR if derivation failed
+ */
+int dukpt_aes_derive_worker_key(uint8_t *inter_key, uint16_t usage, uint8_t *ksn, uint8_t *output);
+
+/**
+ * Recovers the issuer key from EMV tags
+ * @param ca_pk_idx Index of the CA Public Key
+ * @param issuer_pk_cert Issuer public key certificate
+ * @param issuer_pk_cert_len Length of the issuer public key certificate
+ * @param issuer_pk_remainder Remainder of the issuer public key
+ * @param issuer_pk_remainder_len Length of the issuer public key remainder
+ * @param issuer_pk_exponent Value of the exponent of the issuer key, can be either 3 or 65537 only
+ * @param recovered_key_buf If not NULL, the function will copy the recovered key into the buffer
+ * @param details_header If not NULL, the function will copy issuer PK header details there
+ * @result -1 if error, or length of the key recovered
+ */
+int emv_recover_issuer_public_key(uint8_t ca_pk_idx, uint8_t *issuer_pk_cert, size_t issuer_pk_cert_len,
+		uint8_t *issuer_pk_remainder, size_t issuer_pk_remainder_len,  uint32_t issuer_pk_exponent,
+		uint8_t *recovered_key_buf, ISSUER_PK_DETAILS_HEADER* details_header);
+
+/** Recovers the ICC key from the ICC certificate, the remainder, and the issuer public key
+ * @param icc_cert The ICC public key certificate
+ * @param icc_cert_len The length of the ICC certificate
+ * @param icc_remainder The ICC public key remainder, if applicable
+ * @param icc_remainder_len The length of the ICC PK remainder
+ * @param icc_exponent The ICC public key exponent
+ * @param ipk The issuer public key (modulus)
+ * @param ipk_len The length of the issuer public key
+ * @param ipk_exponent The issuer public key exponent
+ * @param output the output buffer for the ICC public key
+ * @param header the holder for ICC public key data
+ * @param static_data Additional data for the hash computation
+ * @param static_data_len Length of the additional data
+ */
+int emv_recover_icc_key(uint8_t *icc_cert, size_t icc_cert_len,
+		uint8_t *icc_remainder, size_t icc_remainder_len, uint32_t icc_exponent,
+		uint8_t *ipk, size_t ipk_len, uint32_t ipk_exponent,
+		uint8_t * output, ICC_PK_DETAILS_HEADER *header, uint8_t * static_data, size_t static_data_len);
+
+/** Validate the provided SDA. Performs only comparison of the computed hash with the provided
+ * value.
+ * @param sda The SDA value. Assumed to be of the same length as the issuer PK.
+ * @param issuer_pk Issuer public key modulus
+ * @param issuer_pk_len Issuer public key modulus length
+ * @param issuer_exponent Issuer exponent
+ * @param auth_data Additional authentication data
+ * @param auth_data_len Length of the additional data
+ * @param header holder for the recovered SDA details header
+ * @result EMV_SUCCESS if the values match, EMV_ERROR otherwise
+ */
+int emv_validate_sda(uint8_t * sda, uint8_t * issuer_pk, size_t issuer_pk_len, uint32_t issuer_exponent,
+		uint8_t * auth_data, size_t auth_data_len, SDA_DETAILS_HEADER * header);
+
+
+/**
+ * Validates that the DDA hash matches the data. Doesn't perform full EMV validation. Returns EMV_SUCESS
+ * or EMV_ERROR
+ *
+ * @param dda the DDA signature
+ * @param dda_len the DDA signature length
+ * @param icc_pub_key Issuer public key (modulus)
+ * @param icc_pub_key_len Length of issuer public key
+ * @param icc_pk_exponent Exponent for the issuer public key
+ * @param icc_priv_key Issuer private key
+ * @param icc_priv_key_len Length of issuer private key
+ * @param icc_data ICC dynamic authentication data
+ * @param term_data Terminal dynamic authentication data
+ * @param term_data_len Length of the terminal additional data
+ * @param dda_details DDA details header
+ * @result EMV_ERROR or EMV_SUCCESS
+ */
+int emv_validate_dda(uint8_t *dda, size_t dda_len, uint8_t * icc_pub_key, size_t icc_pub_key_len,
+		uint32_t icc_pk_exponent, uint8_t *term_data, size_t term_data_len, DDA_DETAILS_HEADER *dda_details);
+/**
+ * Derive ICC Master key from an IMK
+ * @param unpacked_pan unpacked BCD pan
+ * @param unpacked_pan_len length of the pan
+ * @param unpacked_csn unpacked CSN
+ * @param encryption_key encryption key
+ * @param encryption_Key_len length of the encryption key
+ * @param algorithm, ALGORITHM_TDES or ALGORITHM_AES
+ * @param output output buffer
+ * @param output_len output buffer length
+ */
+int emv_derive_icc_master_key(uint8_t *unpacked_pan, size_t unpacked_pan_len, uint8_t *unpacked_csn,
+		uint8_t *encryption_key, size_t encryption_key_len, int algorithm, uint8_t *output, size_t output_len);
+
+int emv_derive_icc_session_key(uint8_t *icc_master_key,
+		size_t icc_master_key_length, int algorithm, uint8_t *atc, uint8_t *output, size_t output_len);
+
+
+/**
+ * Generates the certificate and the issuer key remainder for an issuer PK.
+ * @param ca_index index of the CA whose keys are going to be used to sign the certificate
+ * @param issuer_pk points to the issuer public key modulus
+ * @param issuer_pk_exponent Issuer public key exponent. Only values of 3 and RSA_F4 are supported.
+ * @param issuer_detais Issuer and certificate details
+ * @param output_cert Buffer for the output certificate, must be of at least EMV_MAX_KEY_SIZE length
+ * @param output_cert_len Actual certificate length will be written out to this variable
+ * @param output_remainder Buffer for the issuer PK remainder output. Must be of sufficient length. The required length is the issuer PK
+ * 			length minus (EMV_MAX_KEY_SIZE -36)
+ * @param output_remainder_len Actual remainder length will be updated
+ * @result EMV_SUCCESS if successful, EMV_ERROR otherwise
+ */
+int emv_sign_issuer_public_key(uint8_t ca_index, uint8_t * issuer_pk, uint32_t issuer_pk_exponent,
+		ISSUER_PK_DETAILS_HEADER * issuer_details, uint8_t * output_cert, size_t* output_cert_len,
+		uint8_t * output_remainder, size_t* output_remainder_len);
+
+/**
+ * Signs the ICC public key with an issuer public key.
+ * @param issuer_pub_key Issuer public key (modulus)
+ * @param issuer_pub_key_len Length of issuer public key
+ * @param issuer_pk_exponent Exponent for the issuer public key
+ * @param issuer_priv_key Issuer private key
+ * @param issuer_priv_key_len Length of issuer private key
+ * @param icc_pk ICC public key to sign
+ * @param icc_pk_exponent ICC public key exponent
+ * @param icc_details ICC details header, including PAN, certificate expiry, and serial
+ * @param auth_data Additional authentication data
+ * @param auth_data_len Length of the additional data
+ * @output_cert points to the output buffer
+ * @output_remainder points to the buffer for the output remainder
+ * @output_remainder_len pointer to the length of the remainder
+ * @result length of the certificate, or EMV_ERROR if an error has occured
+ */
+int emv_sign_icc_public_key(uint8_t * icc_pub_key, size_t cc_pub_key_len,
+		uint32_t issuer_pk_exponent,  uint8_t * issuer_priv_key, size_t issuer_priv_key_len,
+		uint8_t * icc_pk, uint32_t icc_pk_exponent,
+		ICC_PK_DETAILS_HEADER * icc_details, uint8_t *auth_data, size_t auth_data_len,
+		uint8_t * output_cert,
+		uint8_t * output_remainder, size_t* output_remainder_len);
+
+/**
+ * Signs the static data for SDA with the provided issuer key
+ * @param issuer_pub_key Issuer public key (modulus)
+ * @param issuer_pub_key_len Length of issuer public key
+ * @param issuer_pk_exponent Exponent for the issuer public key
+ * @param issuer_priv_key Issuer private key
+ * @param issuer_priv_key_len Length of issuer private key
+ * @param auth_data Additional authentication data
+ * @param auth_data_len Length of the additional data
+ * @param sda_details SDA details header
+ * @output points to the output buffer
+ * @result length of the SDA, or EMV_ERROR if an error has occurred
+ */
+int emv_sign_static_data(uint8_t * icc_pub_key, size_t cc_pub_key_len,
+		uint32_t issuer_pk_exponent, uint8_t *issuer_priv_key, size_t issuer_priv_key_len,
+		uint8_t *auth_data, size_t auth_data_len, SDA_DETAILS_HEADER *sda_details,
+		uint8_t *output);
+
+
+/**
+ * Signs the dynamic data for DDA with the provided ICC key
+ * @param icc_pub_key Issuer public key (modulus)
+ * @param icc_pub_key_len Length of issuer public key
+ * @param icc_pk_exponent Exponent for the issuer public key
+ * @param icc_priv_key Issuer private key
+ * @param icc_priv_key_len Length of issuer private key
+ * @param icc_data ICC dynamic authentication data
+ * @param term_data Terminal dynamic authentication data
+ * @param term_data_len Length of the terminal additional data
+ * @param dda_details DDA details header
+ * @output points to the output buffer
+ * @result length of the DDA, or EMV_ERROR if an error has occurred
+ */
+int emv_sign_dynamic_data(uint8_t * icc_pub_key, size_t icc_pub_key_len,
+		uint32_t icc_pk_exponent, uint8_t *icc_priv_key, size_t icc_priv_key_len,
+		uint8_t *icc_data, uint8_t *term_data, size_t term_data_len, DDA_DETAILS_HEADER *dda_details,
+		uint8_t *output);
+
+/**
+ * Generates ARQC
+ * @param session_key session key
+ * @param session_key_len length of the session key
+ * @param algorithm, TDES or AES
+ * @param arqc_data Input data for the ARQC
+ * @param arqc_data_len length of the input data
+ * @param output the output buffer
+ * @param output_len desired length
+ * @result returns EMV_ERROR or EMV_SUCCESS
+ */
+int emv_generate_arqc(uint8_t *session_key, size_t session_key_len,
+		int algorithm, uint8_t *arqc_data, size_t arqc_data_len,
+		uint8_t *output, size_t output_len);
+
+/*
+ * Generates ARPC using one of the two standard methods. If ARC is provided, uses Method 1. Otherwise, uses Method 2.
+ * @param arqc The ARQC value, assumed to be 8 byte length.
+ * @param arc The ARC is 2 byte length. If present, other input parameters are ignored.
+ * @param csu The Card Status Update, assumed to be 4 byte length.
+ * @param pad Proprietary Auth Data, 0 to 8 byte length.
+ * @param pad_len Length of the PAD
+ * @param key Encryption key
+ * @param key_len Length of the encryption key
+ * @param algorithm Algorithm to use.
+ * @param output Output buffer, must have enough digits
+ * @result EMV_ERROR or the actual length of the ARPC.
+ */
+int emv_generate_arpc(uint8_t *arqc, uint8_t *arc, uint8_t *csu, uint8_t *pad,
+		size_t pad_len, int algorithm, uint8_t *key, size_t key_len,
+		uint8_t *output);
+
+/* prints the issuer PK details header in a human-readable format */
+void print_issuer_pk_details_header(ISSUER_PK_DETAILS_HEADER* header);
+
+/* prints the ICC PK details header in a human-readable format */
+void print_icc_pk_details_header(ICC_PK_DETAILS_HEADER * header);
+
+
+/**
+ * Returns a char buffer with the JWK representation of the key. Allocates memory which
+ * the caller must free.
+ * @param key_type Key type
+ * @param key_use  Key use
+ * @param kid Key ID (optional)
+ * @param data key data, specific to the key algorithm
+ * @result returns NULL or pointer to an allocated memory buffer
+ */
+char * jose_create_jwk( uint8_t key_type, uint8_t key_use, char* kid, void * data);
+
+/**
+ * Creates the JWE representation of the given payload.
+ * @param key_protection_alg the key protection algorithm
+ * @param payload_enc_alg the payload encryption algorithm
+ * @param cek the Content Encryption Key
+ * @param cek_len the Content Encryption Key length
+ * @param kek_data  points to the structure corresponding to the algorithm. In our case it is only RSA_PARAMS.
+ * @param iv the initialization vector
+ * @param iv_len the IV length
+ * @param payload the payload
+ * @param payload_len the payload length
+ * @result the string with base64 encoding of the payload, dot, then the auth tag. It is caller's responsibility to free the memory.
+ */
+char * jose_create_jwe ( uint8_t key_protection_alg, uint8_t payload_enc_alg, uint8_t * cek, size_t cek_len, void *kek_data,
+		uint8_t *iv, size_t iv_size, uint8_t * payload, size_t payload_len);
+
+int make_pin_block (int format, uint8_t * pin, size_t pin_len, uint8_t * pan, size_t pan_len,
+		uint8_t * unique_id, size_t unique_id_len, uint8_t * output);
+
+
+/**
+ * Encrypts a format 4 block formerly prepared by make_pin_block.
+ * @param key AES key
+ * @param key_size AES key size, bytes
+ * @param input the two parts of the pin block in a single array
+ * @param output the output buffer, must be of at least 16 bytes long
+ * @result PIN_OK if ok, PIN_ERROR if not.
+ */
+int encrypt_format_4_block( uint8_t* key, size_t key_size, uint8_t * input, uint8_t* output );
+
+/**
+ * Decrypts a format 4 block. Returns only the first chunk of it.
+ * @param key AES key
+ * @param key_size AES key size, bytes
+ * @param pan the PAN
+ * @param pan_len PAN length
+ * @param input the pin block in a single array
+ * @param output the output buffer, must be of at least 16 bytes long
+ * @result PIN_OK if ok, PIN_ERROR if not.
+ */
+int decrypt_format_4_block ( uint8_t* key, size_t key_size, uint8_t* pan, size_t pan_len, uint8_t * input, uint8_t* output);
+
+/** Encrypts the key under the KEK, applying a variant.
+ *  A single-byte variant is assumed for the encryption. The variant array has up to three positions. The kek is
+ *  a double TDES key. The input key is a double or a triple TDES key.
+ *  @param key the key to encrypt
+ *  @param key_len length of the input key to encrypt. It can be either double or triple TDES length.
+ *  @kek the key encryption key, always a double TDES key
+ *  @variant the variant table, three bytes, applied to the first byte of the second half of the kek
+ *  @output the output buffer, must contain the same bytes as key_len
+ *  @result PIN_OK on success, PIN_ERROR on failure
+ */
+int encrypt_key_variant( uint8_t * key, uint8_t key_len, uint8_t *kek, uint8_t* variant, uint8_t* output );
+
+/** Populates the data in the key derivation base structure, conscious of byte order
+ *  @param base the struct to populate
+ *  @param counter the counter value
+ *  @key_usage key usage (encryption or MAC)
+ *  @algorithm algorithm (a flavor of TDES or AES)
+ *  @length desired key length
+ *  @result TR31_OK if ok, TR31_ERROR otherwise
+ */
+int tr31_prepare_key_derivation(TR31_KEY_DERIVATION_BASE *base, uint8_t counter,
+		uint16_t key_usage, uint16_t algorithm);
+
+/** Derives encryption/MAC keys using the variant method.
+ *  @param kbpk 		Key Block Protection Key
+ *  @param kbpk_size 	Length of the KBPK, can be either double or triple TDES.
+ *  @param key_usage	Defines key usage, TR31_KEY_USAGE_ENC or TR31_KEY_USAGE_MAC
+ *  @param output  		Output buffer, must be same length as the KBPK
+ *  @result TR31_OK if OK, TR31_ERROR otherwise
+ */
+int tr31_derive_variant( uint8_t * kbpk, size_t kbpk_size, uint8_t key_usage, uint8_t * output );
+
+/**
+ * Derives keys in the binding mode, according to ANSI TR-31, by calculating
+ * CMAC with the specified block cipher on an input vector as defined in TR31_KEY_DERIVATION_BASE.
+ *
+ * @param key_usage Derived key usage, TR31_KEY_USAGE_ENC or TR31_KEY_USAGE_MAC
+ * @param derivation_algorithm Derivation algorithm, double or triple TDES, or an AES flavor
+ * @param output Buffer for the derived key of sufficient length
+ * @result returns TR31_OK on success or TR31_ERROR otherwise
+ */
+int tr31_derive_binding(uint16_t key_usage,
+		uint16_t derivation_algorithm, uint8_t * kbpk, uint8_t* output);
