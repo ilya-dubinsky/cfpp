@@ -1,5 +1,6 @@
 package org.ilyadubinsky.cfpp.utils;
 
+import java.util.Arrays;
 import java.util.Random;
 
 public class BitOps {
@@ -156,8 +157,8 @@ public class BitOps {
 	}
 
 	/**
-	 * XOR two arrays and place the result in the output. Output can be equal to one
-	 * of the arrays
+	 * XOR two arrays and return the result. If the mask is shorter than the array,
+	 * it will be applied cyclically
 	 * 
 	 * @param data input value
 	 * @param mask mask to apply
@@ -173,6 +174,56 @@ public class BitOps {
 			if (maskPtr == mask.length)
 				maskPtr = 0;
 		}
+		return result;
+	}
+
+	/**
+	 * Shifts a byte array left by a number of bits
+	 * 
+	 * @param data input array of bytes
+	 * @param by   number of bits by which to shift
+	 * @return copy of data, shifted left
+	 */
+	public static byte[] leftShiftArray(byte[] data, int by) {
+		if (null == data || by < 0)
+			return null;
+
+		byte[] result = new byte[data.length];
+
+		if (0 == by)
+			return Arrays.copyOf(data, data.length);
+
+		/* start by shifting the whole bytes, then apply ourselves for the remainder */
+
+		int byBytes = by / 8;
+
+		if (byBytes >= data.length)
+			return result;
+
+		if (byBytes > 0) /* there is a whole number of bytes to shift by */
+		{
+			/* start from by and copy the array into the result */
+			System.arraycopy(data, byBytes, result, 0, data.length - byBytes);
+
+			return leftShiftArray(result, by % 8);
+		} else { /* shift by bits */
+			/* compute the msb mask that will be used to extract carry */
+			byte msbMask = (byte) (0xFF & ~(((1 << (8 - by)) - 1)));
+			byte carry = 0;
+			/*
+			 * scan the array from the end to the beginning, shifting left and applying
+			 * carry
+			 */
+			for (int i = data.length - 1; i >= 0; i--) {
+
+				byte newCarry = (byte) ((0xFF & (data[i] & msbMask)) >> (8 - by));
+
+				result[i] = (byte) (data[i] << by | carry);
+
+				carry = newCarry;
+			}
+		}
+
 		return result;
 	}
 
@@ -261,8 +312,12 @@ public class BitOps {
 		return 10 - (result % 10);
 	}
 
-	/* helper utilities for future use */
-
+	/**
+	 * Converts an Object array to a byte array
+	 * 
+	 * @param array input array
+	 * @return byte array
+	 */
 	public static byte[] toByteArray(Object[] array) {
 		/* input sanity */
 		if (array == null)
@@ -277,6 +332,12 @@ public class BitOps {
 		return result;
 	}
 
+	/**
+	 * Converts a long array to a byte array
+	 * 
+	 * @param array input array
+	 * @return byte array
+	 */
 	public static byte[] toByteArray(long[] array) {
 		/* input sanity */
 		if (array == null)
@@ -291,6 +352,12 @@ public class BitOps {
 		return result;
 	}
 
+	/**
+	 * Converts input array to a byte array
+	 * 
+	 * @param array input array
+	 * @return byte array
+	 */
 	public static byte[] toByteArray(int[] array) {
 		/* input sanity */
 		if (array == null)
@@ -305,20 +372,58 @@ public class BitOps {
 		return result;
 	}
 
+	/**
+	 * Generates a random sequence of bytes of a given size
+	 * 
+	 * @param size Number of bytes to generate
+	 * @return Desired random sequence
+	 */
 	public static byte[] randomByteSequence(int size) {
-		if (size<=0) return null;
+		if (size <= 0)
+			return null;
 		byte[] result = new byte[size];
-		
-		for (int i =0; i<result.length; i++) 
-			result[i] = (byte) (0xF&random.nextInt());
-		
+
+		for (int i = 0; i < result.length; i++)
+			result[i] = (byte) (0xF & random.nextInt());
+
 		return result;
 	}
-	
+
+	/**
+	 * Pads array from a certain index with a given value till desired length
+	 * 
+	 * @param array The array to pad
+	 * @param from  starting index
+	 * @param size  total length to pad
+	 * @param value value to use for padding
+	 */
 	public static void padArray(byte[] array, int from, int size, byte value) {
-		if (array == null) return;
-		if (from+size>array.length) return;
-		for (int i = from; i<from+size; i ++)
-			array [i] = value;
+		if (array == null)
+			return;
+		if (from + size > array.length)
+			return;
+		for (int i = from; i < from + size; i++)
+			array[i] = value;
+	}
+	
+	/**
+	 * Performs multiplication by x in GF(2^n)
+	 * @param input Byte array which is considered the coefficients of the polynomial
+	 * @param factor The irreducible polynomial
+	 * @return Multiplication result as a new array
+	 */
+	public static byte[] mulByX(byte[] input, byte[] factor) {
+		
+		int msb = log2( (0xFF & input[0]));
+		if (msb != 7)
+			/* if the most significant bit of the input is 0, multiplication by x is shifting left */
+			return leftShiftArray(input, 1);
+		
+		/* if the most significant bit is 1, we need to subtract the factor polynomial */
+		byte[] result = leftShiftArray (input, 1);
+		for (int i=0; i< Integer.min(result.length, factor.length); i++) {
+			result[result.length-1-i] ^= factor[factor.length-1-i];
+		}
+		return result;
 	}
 }

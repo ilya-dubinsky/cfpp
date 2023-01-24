@@ -1,6 +1,7 @@
 package org.ilyadubinsky.cfpp.crypto;
 
 import java.math.BigInteger;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
@@ -11,9 +12,18 @@ import java.security.SignatureException;
 import java.security.spec.DSAPrivateKeySpec;
 import java.security.spec.DSAPublicKeySpec;
 import java.security.spec.InvalidKeySpecException;
+import java.util.Arrays;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.Mac;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+
+import org.ilyadubinsky.cfpp.utils.BitOps;
+import org.ilyadubinsky.cfpp.utils.IO;
 
 import lombok.extern.java.Log;
 
@@ -39,25 +49,33 @@ public class MessageAuthenticationAlgorithms {
 		if (null == image)
 			return null;
 
-		/* Create a private key spec from the domain parameters p,g,q, and the private key x */
+		/*
+		 * Create a private key spec from the domain parameters p,g,q, and the private
+		 * key x
+		 */
 		DSAPrivateKeySpec dsaPrivKeySpec = new DSAPrivateKeySpec(x, p, q, g);
 
 		/* "Generate" the key - this will only copy the values above */
 		KeyFactory keyFactory = KeyFactory.getInstance(Constants.DSA_KEY_ALGORITHM);
 		PrivateKey privKey = keyFactory.generatePrivate(dsaPrivKeySpec);
-		
-		/* instantiate the algorithm. NOTE: SHA1 will only work with small numbers, so we'll use SHA256 here */
+
+		/*
+		 * instantiate the algorithm. NOTE: SHA1 will only work with small numbers, so
+		 * we'll use SHA256 here
+		 */
 		Signature s = Signature.getInstance(Constants.DSA_SHA256_ALGORITHM);
-		
-		/* this is a very, very DANGEROUS workaround for the k collision issue that's not handled in the Java JDK */
-		if (p.bitLength()<500) {/* However, you shouldn't be using keys this small anyway */
+
+		/*
+		 * this is a very, very DANGEROUS workaround for the k collision issue that's
+		 * not handled in the Java JDK
+		 */
+		if (p.bitLength() < 500) {/* However, you shouldn't be using keys this small anyway */
 			log.severe("**** DANGER **** DSA signature is calculated with a very short key and without randomization");
 			s.initSign(privKey, new Utils.DisableRandom());
-		}
-		else {
+		} else {
 			s.initSign(privKey);
 		}
-		
+
 		/* sign the image */
 		s.update(image);
 
@@ -68,64 +86,140 @@ public class MessageAuthenticationAlgorithms {
 
 	/**
 	 * Validates the DSA signature of the input value
-	 * @param image the input value
+	 * 
+	 * @param image     the input value
 	 * @param signature the signature to validate
-	 * @param y Y parameter of the algorithm (the public key)
-	 * @param p P parameter of the algorithm (domain parameter, first prime)
-	 * @param q Q parameter of the algorithm (domain parameter, second prime)
-	 * @param g G parameter of the algorithm (domain parameter, generator)
+	 * @param y         Y parameter of the algorithm (the public key)
+	 * @param p         P parameter of the algorithm (domain parameter, first prime)
+	 * @param q         Q parameter of the algorithm (domain parameter, second
+	 *                  prime)
+	 * @param g         G parameter of the algorithm (domain parameter, generator)
 	 * @return true if valid, false otherwise
 	 * @throws NoSuchAlgorithmException
 	 * @throws InvalidKeySpecException
 	 * @throws SignatureException
 	 * @throws InvalidKeyException
 	 */
-	public static boolean verifyDSA(byte[] image, byte[] signature, BigInteger y, BigInteger p, BigInteger q, BigInteger g)
+	public static boolean verifyDSA(byte[] image, byte[] signature, BigInteger y, BigInteger p, BigInteger q,
+			BigInteger g)
 			throws NoSuchAlgorithmException, InvalidKeySpecException, SignatureException, InvalidKeyException {
 
 		if (null == image || null == signature)
 			return false;
 
-		/* Create a public key spec from the domain parameters p,g,q, and the public key y */
+		/*
+		 * Create a public key spec from the domain parameters p,g,q, and the public key
+		 * y
+		 */
 		DSAPublicKeySpec dsaPubKeySpec = new DSAPublicKeySpec(y, p, q, g);
-		
+
 		/* "Generate" the key - this will only copy the values above */
 		KeyFactory keyFactory = KeyFactory.getInstance(Constants.DSA_KEY_ALGORITHM);
 		PublicKey pubKey = keyFactory.generatePublic(dsaPubKeySpec);
 
-		/* instantiate the algorithm. NOTE: SHA1 will only work with small numbers, so we'll use SHA256 here */
+		/*
+		 * instantiate the algorithm. NOTE: SHA1 will only work with small numbers, so
+		 * we'll use SHA256 here
+		 */
 		Signature s = Signature.getInstance(Constants.DSA_SHA256_ALGORITHM);
-		
+
 		s.initVerify(pubKey);
-		
+
 		s.update(image);
-		
+
 		return s.verify(signature);
-		
+
 	}
-	
+
 	/**
-	 * Computes the HMAC value 
+	 * Computes the HMAC value
+	 * 
 	 * @param image The image to sign
-	 * @param key The secret key 
+	 * @param key   The secret key
 	 * @return Byte value of the HMAC, or null if the inputs are wrong
 	 * @throws NoSuchAlgorithmException
 	 * @throws InvalidKeyException
 	 */
-	public static byte[] computeHMAC( byte [] image, byte[] key ) throws NoSuchAlgorithmException, InvalidKeyException {
-		if (null == image || null == key )
+	public static byte[] computeHMAC(byte[] image, byte[] key) throws NoSuchAlgorithmException, InvalidKeyException {
+		if (null == image || null == key)
 			return null;
-		
+
 		/* wrap the key */
 		SecretKeySpec hmacKeySpec = new SecretKeySpec(key, Constants.HMAC_SHA1);
 
 		/* instantiate the algorithm */
 		Mac mac = Mac.getInstance(Constants.HMAC_SHA1);
-		
+
 		mac.init(hmacKeySpec);
-		
+
 		mac.update(image);
-		
+
 		return mac.doFinal();
+	}
+
+	public static int[] GF_2_8_POLY = { 0x1B };
+
+	public static byte[] computeAESCMAC(byte[] image, byte[] key) throws InvalidKeyException, NoSuchAlgorithmException,
+			NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
+		if (null == image || null == key || !SymmetricAlgorithms.isValidAESKeyLength(key.length))
+			return null;
+
+		/* first, we derive the keys, k1 and k2 */
+		byte[] zeroBlock = new byte[Constants.AES_BLOCK_SIZE_B];
+
+		byte[] k0 = SymmetricAlgorithms.encryptAESBlock(zeroBlock, key);
+
+		/* k1 is k0 times x modulo the generating polynomial of GF(2^8), 0x1B */
+		byte[] irredPoly = BitOps.toByteArray(GF_2_8_POLY);
+
+		byte[] k1 = BitOps.mulByX(k0, irredPoly);
+		/* k2 is k1 times x modulo the generating polynomial of GF(2^8), 0x1B */
+		byte[] k2 = BitOps.mulByX(k1, irredPoly);
+
+		/* start padding the data */
+		/* calculate the target length */
+		int targetLen = (image.length - (image.length % Constants.AES_BLOCK_SIZE_B))
+				+ (Integer.signum(image.length % Constants.AES_BLOCK_SIZE_B) * Constants.AES_BLOCK_SIZE_B);
+
+		byte[] encryptionInput = new byte[targetLen];
+
+		System.arraycopy(image, 0, encryptionInput, 0, image.length);
+		byte[] k = k1;
+		if (image.length != targetLen) {
+			/* pad the value */
+			encryptionInput[image.length] = (byte) 0x80;
+			k = k2;
+		}
+		System.out.println("Encryption input: " + IO.printByteArray(encryptionInput));
+		
+		System.out.println("K1: " + IO.printByteArray(k1));
+		System.out.println("K2: " + IO.printByteArray(k2));
+
+		/* no need to pad, using k1 to xor the last chunk */
+		byte[] xoredChunk = BitOps.xorArray(
+				Arrays.copyOfRange(encryptionInput, targetLen - Constants.AES_BLOCK_SIZE_B , targetLen ), k);
+
+		System.out.println("XORed chunk: " + IO.printByteArray(xoredChunk));
+
+		
+		System.arraycopy(xoredChunk, 0,
+				encryptionInput, targetLen - Constants.AES_BLOCK_SIZE_B , Constants.AES_BLOCK_SIZE_B);
+		
+		System.out.println("Encryption input: " + IO.printByteArray(encryptionInput));
+		
+		Cipher c = Cipher.getInstance(Constants.AES_CBC_NO_PADDING);
+
+		SecretKeySpec encKey = new SecretKeySpec(key, Constants.AES_KEY_ALGORITHM);
+		IvParameterSpec ivParams = new IvParameterSpec(zeroBlock);
+		
+		c.init(Cipher.ENCRYPT_MODE, encKey, ivParams);
+
+		byte[] fullCiphertext = c.doFinal(encryptionInput);
+		
+		System.out.println("Ciphertext: " + IO.printByteArray(fullCiphertext));
+
+
+		return Arrays.copyOfRange(fullCiphertext, fullCiphertext.length-Constants.AES_BLOCK_SIZE_B, fullCiphertext.length);
+
 	}
 }
