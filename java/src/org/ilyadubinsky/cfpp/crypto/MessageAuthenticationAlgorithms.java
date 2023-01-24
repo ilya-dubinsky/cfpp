@@ -36,7 +36,7 @@ public class MessageAuthenticationAlgorithms {
 		/* Create a private key spec from the domain parameters p,g,q, and the private key x */
 		DSAPrivateKeySpec dsaPrivKeySpec = new DSAPrivateKeySpec(x, p, q, g);
 
-		/* Generate the key */
+		/* "Generate" the key - this will only copy the values above */
 		KeyFactory keyFactory = KeyFactory.getInstance(Constants.DSA_KEY_ALGORITHM);
 		PrivateKey privKey = keyFactory.generatePrivate(dsaPrivKeySpec);
 		
@@ -57,18 +57,36 @@ public class MessageAuthenticationAlgorithms {
 		return output;
 	}
 
+	/**
+	 * Validates the DSA signature of the input value
+	 * @param image the input value
+	 * @param signature the signature to validate
+	 * @param y Y parameter of the algorithm (the public key)
+	 * @param p P parameter of the algorithm (domain parameter, first prime)
+	 * @param q Q parameter of the algorithm (domain parameter, second prime)
+	 * @param g G parameter of the algorithm (domain parameter, generator)
+	 * @return true if valid, false otherwise
+	 * @throws NoSuchAlgorithmException
+	 * @throws InvalidKeySpecException
+	 * @throws SignatureException
+	 * @throws InvalidKeyException
+	 */
 	public static boolean verifyDSA(byte[] image, byte[] signature, BigInteger y, BigInteger p, BigInteger q, BigInteger g)
 			throws NoSuchAlgorithmException, InvalidKeySpecException, SignatureException, InvalidKeyException {
 
 		if (null == image || null == signature)
 			return false;
 
+		/* Create a public key spec from the domain parameters p,g,q, and the public key y */
 		DSAPublicKeySpec dsaPubKeySpec = new DSAPublicKeySpec(y, p, q, g);
 		
+		/* "Generate" the key - this will only copy the values above */
 		KeyFactory keyFactory = KeyFactory.getInstance(Constants.DSA_KEY_ALGORITHM);
 		PublicKey pubKey = keyFactory.generatePublic(dsaPubKeySpec);
 
+		/* instantiate the algorithm. NOTE: SHA1 will only work with small numbers, so we'll use SHA256 here */
 		Signature s = Signature.getInstance(Constants.DSA_SHA256_ALGORITHM);
+		
 		s.initVerify(pubKey);
 		
 		s.update(image);
