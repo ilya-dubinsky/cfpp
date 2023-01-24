@@ -1,4 +1,4 @@
-package org.ilyadubinsky.cfpp.utils;
+package org.ilyadubinsky.cfpp.payments;
 
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -10,6 +10,11 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.ShortBufferException;
 import javax.crypto.spec.SecretKeySpec;
+
+import org.ilyadubinsky.cfpp.crypto.Constants;
+import org.ilyadubinsky.cfpp.crypto.Utils;
+import org.ilyadubinsky.cfpp.utils.BitOps;
+import org.ilyadubinsky.cfpp.utils.TestIO;
 
 import lombok.extern.java.Log;
 
@@ -53,15 +58,15 @@ public class Legacy {
 		System.arraycopy(serviceCode, 0, block2Input, 4, 3);
 		byte[] block2 = BitOps.packBCD(block2Input, 8, false);
 
-		Cipher c = Cipher.getInstance("DES/ECB/NoPadding");
-		SecretKeySpec keyCVKA = new SecretKeySpec(cvkA, "DES");
+		Cipher c = Cipher.getInstance(Constants.DES_ECB_NO_PADDING_ALGORITHM);
+		SecretKeySpec keyCVKA = new SecretKeySpec(cvkA, Constants.DES_KEY_ALGORITHM);
 
 		byte[] cvkFull = new byte[24];
 		System.arraycopy(cvkA, 0, cvkFull, 0, 8);
 		System.arraycopy(cvkB, 0, cvkFull, 8, 8);
 		System.arraycopy(cvkA, 0, cvkFull, 16, 8);
 
-		SecretKeySpec keyCVKB = new SecretKeySpec(cvkFull, "DESede");
+		SecretKeySpec keyCVKB = new SecretKeySpec(cvkFull, Constants.TDES_KEY_ALGORITHM);
 
 		c.init(Cipher.ENCRYPT_MODE, keyCVKA);
 		c.doFinal(block1, 0, 8, block1Output);
@@ -74,13 +79,16 @@ public class Legacy {
 		block2 = BitOps.xorArray(block2, block1Output);
 		log.log(Level.FINE, "After XOR: " + TestIO.printByteArray(block2));
 		/* encrypt block 2 in EDE mode */
-		c = Cipher.getInstance("DESede/ECB/NoPadding");
+		c = Cipher.getInstance(Constants.TDES_ECB_NO_PADDING_ALGORITHM);
 
 		byte[] block2Output = new byte[8];
 		c.init(Cipher.ENCRYPT_MODE, keyCVKB);
 		c.doFinal(block2, 0, 8, block2Output);
 		log.log(Level.FINE, "After 2nd encryption: " + TestIO.printByteArray(block2Output));
-
+		
+		/* clean up the allocated data */
+		Utils.purgeArray(cvkFull);
+		
 		return BitOps.decimalizeVector(block2Output, desiredLength);
 	}
 
@@ -123,12 +131,14 @@ public class Legacy {
 		System.arraycopy(pvkB, 0, pvk, 8, 8);
 		System.arraycopy(pvkA, 0, pvk, 16, 8);
 
-		Cipher c = Cipher.getInstance("DESede/ECB/NoPadding");
-		SecretKeySpec pvkKey = new SecretKeySpec(pvk, "DESede");
+		Cipher c = Cipher.getInstance(Constants.TDES_ECB_NO_PADDING_ALGORITHM);
+		SecretKeySpec pvkKey = new SecretKeySpec(pvk, Constants.TDES_KEY_ALGORITHM);
 
 		c.init(Cipher.ENCRYPT_MODE, pvkKey);
 		byte[] encOutput = new byte[8];
 		c.doFinal(packedInput, 0, 8, encOutput);
+		
+		Utils.purgeArray(pvk);
 
 		log.log(Level.FINE, "PVV after encryption: " + TestIO.printByteArray(encOutput));
 
