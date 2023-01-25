@@ -25,6 +25,8 @@ public class Constants {
 	public static final String DES_ECB_NO_PADDING_ALGORITHM = "DES/ECB/NoPadding";
 	public static final String AES_ECB_NO_PADDING = "AES/ECB/NoPadding";
 	public static final String AES_CBC_NO_PADDING = "AES/CBC/NoPadding";
+	public static final String RSA_ECB_NO_PADDING = "RSA/ECB/NoPadding";
+	public static final String RSA_ECB_OAEP = "RSA/ECB/OAEPWithSHA-256AndMGF1Padding";
 
 	public static final String HMAC_SHA256 = "HmacSHA256";
 	public static final String HMAC_SHA1 = "HmacSHA1";
@@ -34,6 +36,6 @@ public class Constants {
 	public static final String DES_KEY_ALGORITHM = "DES";
 	public static final String TDES_KEY_ALGORITHM = "DESede";
 	public static final String AES_KEY_ALGORITHM = "AES";
-	public static final String RSA_ALGORITHM = "RSA";
+	public static final String RSA_KEY_ALGORITHM = "RSA";
 	
 }
