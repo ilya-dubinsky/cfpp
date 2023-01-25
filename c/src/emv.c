@@ -978,7 +978,7 @@ static int emv_derive_icc_master_key_aes(uint8_t *unpacked_input, size_t unpacke
 cleanup:
 	PURGE(key);
 	PURGE(packed_input);
-	return result; /* TODO not implemented yet */
+	return result;
 }
 
 static int emv_derive_icc_master_key_des(uint8_t *unpacked_input, size_t unpacked_input_len,
