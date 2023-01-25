@@ -34,5 +34,6 @@ public class Constants {
 	public static final String DES_KEY_ALGORITHM = "DES";
 	public static final String TDES_KEY_ALGORITHM = "DESede";
 	public static final String AES_KEY_ALGORITHM = "AES";
+	public static final String RSA_ALGORITHM = "RSA";
 	
 }
