@@ -13,7 +13,10 @@ import java.security.spec.RSAPublicKeySpec;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.KeyAgreement;
 import javax.crypto.NoSuchPaddingException;
+import javax.crypto.spec.DHPrivateKeySpec;
+import javax.crypto.spec.DHPublicKeySpec;
 
 public class AsymmetricAlgorithms {
 
@@ -137,7 +140,7 @@ public class AsymmetricAlgorithms {
 
 		return doDecryptRSA(data, n, d, Constants.RSA_ECB_OAEP);
 	}
-	
+
 	/**
 	 * Performs RSA decryption using the specified algorithm flavor
 	 * 
@@ -168,5 +171,42 @@ public class AsymmetricAlgorithms {
 
 		/* do the decryption */
 		return c.doFinal(data);
+	}
+
+	/**
+	 * Generates a secret value using Diffie-Hellman algorithm.
+	 * @param p P, a prime (domain parameter)
+	 * @param g G, the generator (domain parameter)
+	 * @param ourX - our private key, the exponent (a). 
+	 * @param theirY - their public key, g^b, where b is their private exponent
+	 * @return generated secret value
+	 * @throws NoSuchAlgorithmException
+	 * @throws InvalidKeySpecException
+	 * @throws InvalidKeyException
+	 * @throws IllegalStateException
+	 */
+	public static byte[] generateDHKey(BigInteger p, BigInteger g, BigInteger ourX, BigInteger theirY)
+			throws NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException, IllegalStateException {
+		// TODO: validate input
+		
+		/* prepare the key specs */
+		DHPrivateKeySpec ourKeySpec = new DHPrivateKeySpec(ourX, p, g);
+		DHPublicKeySpec theirKeySpec = new DHPublicKeySpec(theirY, p, g);
+
+		/* instantiate the keys */
+		KeyFactory kf = KeyFactory.getInstance(Constants.DIFFIE_HELLMAN_KEY_ALGORITHM);
+		PrivateKey ourKey = kf.generatePrivate(ourKeySpec);
+		PublicKey theirKey = kf.generatePublic(theirKeySpec);
+		
+		/* Instantiate the key agreement implementation */
+		KeyAgreement kag = KeyAgreement.getInstance(Constants.DIFFIE_HELLMAN);
+		
+		/* We init it with our (private) key */
+		kag.init(ourKey);
+		/* We do phase with their (public) key */
+		kag.doPhase(theirKey, true);
+
+		/* aaand we return the generated secret */
+		return kag.generateSecret();
 	}
 }
