@@ -172,7 +172,8 @@ public class MessageAuthenticationAlgorithms {
 
 		/* k1 is k0 times x modulo the generating polynomial of GF(2^8), 0x1B */
 		byte[] irredPoly = BitOps.toByteArray(AES_F_2_8_POLY);
-		System.out.println("K0: " + IO.printByteArray(k0));
+		
+		log.finest("K0 (L): " + IO.printByteArray(k0));
 
 		byte[] k1 = BitOps.mulByX(k0, irredPoly);
 		/* k2 is k1 times x modulo the generating polynomial of GF(2^8), 0x1B */
@@ -183,6 +184,7 @@ public class MessageAuthenticationAlgorithms {
 		int targetLen = (image.length - (image.length % Constants.AES_BLOCK_SIZE_B))
 				+ (Integer.signum(image.length % Constants.AES_BLOCK_SIZE_B) * Constants.AES_BLOCK_SIZE_B);
 		
+		/* handle empty input block */
 		if (targetLen == 0) targetLen = Constants.AES_BLOCK_SIZE_B;
 
 		byte[] encryptionInput = new byte[targetLen];
@@ -197,22 +199,18 @@ public class MessageAuthenticationAlgorithms {
 			encryptionInput[image.length] = (byte) 0x80;
 			k = k2;
 		}
-		System.out.println("Encryption input: " + IO.printByteArray(encryptionInput));
-		
-		System.out.println("K1: " + IO.printByteArray(k1));
-		System.out.println("K2: " + IO.printByteArray(k2));
+		log.finest("K1    : " + IO.printByteArray(k1));
+		log.finest("K2    : " + IO.printByteArray(k2));
 
 		/* no need to pad, using k1 to xor the last chunk */
 		byte[] xoredChunk = BitOps.xorArray(
 				Arrays.copyOfRange(encryptionInput, targetLen - Constants.AES_BLOCK_SIZE_B , targetLen ), k);
 
-		System.out.println("XORed chunk: " + IO.printByteArray(xoredChunk));
 
-		
 		System.arraycopy(xoredChunk, 0,
 				encryptionInput, targetLen - Constants.AES_BLOCK_SIZE_B , Constants.AES_BLOCK_SIZE_B);
-		
-		System.out.println("Encryption input: " + IO.printByteArray(encryptionInput));
+
+		log.finest("inBlock: " + IO.printByteArray(encryptionInput));
 		
 		Cipher c = Cipher.getInstance(Constants.AES_CBC_NO_PADDING);
 
@@ -223,10 +221,8 @@ public class MessageAuthenticationAlgorithms {
 
 		byte[] fullCiphertext = c.doFinal(encryptionInput);
 		
-		System.out.println("Ciphertext: " + IO.printByteArray(fullCiphertext));
-
+		log.finest("Tag: " + IO.printByteArray(fullCiphertext));
 
 		return Arrays.copyOfRange(fullCiphertext, fullCiphertext.length-Constants.AES_BLOCK_SIZE_B, fullCiphertext.length);
-
 	}
 }
