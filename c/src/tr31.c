@@ -79,9 +79,8 @@ int tr31_prepare_key_derivation(TR31_KEY_DERIVATION_BASE * base, uint8_t counter
 	if (! VALID_ALGORITHM(algorithm) )
 		return TR31_ERROR;
 
+	*(uint16_t*) &base->length = HTONS(bit_key_length [algorithm]); /* the order is important since HTONS has a side effect */
 	*(uint16_t*) &base->algorithm = HTONS(algorithm);
-
-	*(uint16_t*) &base->length = HTONS(bit_key_length [algorithm]);
 
 	result = TR31_OK;
 	return result;
