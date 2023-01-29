@@ -157,10 +157,11 @@ public class MessageAuthenticationAlgorithms {
 		return mac.doFinal();
 	}
 
-	public static int[] GF_2_8_POLY = { 0x1B };
+	public static int[] AES_F_2_8_POLY = { 0x87 };
 
 	public static byte[] computeAESCMAC(byte[] image, byte[] key) throws InvalidKeyException, NoSuchAlgorithmException,
 			NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
+		
 		if (null == image || null == key || !SymmetricAlgorithms.isValidAESKeyLength(key.length))
 			return null;
 
@@ -170,7 +171,8 @@ public class MessageAuthenticationAlgorithms {
 		byte[] k0 = SymmetricAlgorithms.encryptAESBlock(zeroBlock, key);
 
 		/* k1 is k0 times x modulo the generating polynomial of GF(2^8), 0x1B */
-		byte[] irredPoly = BitOps.toByteArray(GF_2_8_POLY);
+		byte[] irredPoly = BitOps.toByteArray(AES_F_2_8_POLY);
+		System.out.println("K0: " + IO.printByteArray(k0));
 
 		byte[] k1 = BitOps.mulByX(k0, irredPoly);
 		/* k2 is k1 times x modulo the generating polynomial of GF(2^8), 0x1B */
@@ -180,13 +182,18 @@ public class MessageAuthenticationAlgorithms {
 		/* calculate the target length */
 		int targetLen = (image.length - (image.length % Constants.AES_BLOCK_SIZE_B))
 				+ (Integer.signum(image.length % Constants.AES_BLOCK_SIZE_B) * Constants.AES_BLOCK_SIZE_B);
+		
+		if (targetLen == 0) targetLen = Constants.AES_BLOCK_SIZE_B;
 
 		byte[] encryptionInput = new byte[targetLen];
 
 		System.arraycopy(image, 0, encryptionInput, 0, image.length);
+		
+		/* k will be used to encrypt the value, default is k1 */
 		byte[] k = k1;
+		
 		if (image.length != targetLen) {
-			/* pad the value */
+			/* pad the value and use k2 for encryption */
 			encryptionInput[image.length] = (byte) 0x80;
 			k = k2;
 		}

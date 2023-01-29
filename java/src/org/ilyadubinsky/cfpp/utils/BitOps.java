@@ -376,7 +376,7 @@ public class BitOps {
 		if (array == null)
 			return null;
 		if (array.length == 0)
-			return null;
+			return new byte[0];
 		/* check the types */
 		byte[] result = new byte[array.length];
 		for (int i = 0; i < array.length; i++)
@@ -427,13 +427,15 @@ public class BitOps {
 	 */
 	public static byte[] mulByX(byte[] input, byte[] factor) {
 		
+		byte[] result = leftShiftArray (input, 1);
+
 		int msb = log2( (0xFF & input[0]));
+		/* if the most significant bit of the input is 0, multiplication by x is shifting left only */
 		if (msb != 7)
-			/* if the most significant bit of the input is 0, multiplication by x is shifting left */
-			return leftShiftArray(input, 1);
+			return result;
 		
 		/* if the most significant bit is 1, we need to subtract the factor polynomial */
-		byte[] result = leftShiftArray (input, 1);
+		/* subtract the polynomial */
 		for (int i=0; i< Integer.min(result.length, factor.length); i++) {
 			result[result.length-1-i] ^= factor[factor.length-1-i];
 		}
