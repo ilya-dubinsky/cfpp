@@ -157,6 +157,19 @@ public class BitOps {
 	}
 
 	/**
+	 * Apply single-byte mask to the array
+	 * @param data input value
+	 * @param mask mask to apply
+	 * @return
+	 */
+	public static byte[] xorArray(byte[] data, byte mask) {
+		byte [] maskArray = new byte[1];
+		maskArray[0] = mask;
+		
+		return xorArray(data, maskArray);
+	}
+	
+	/**
 	 * XOR two arrays and return the result. If the mask is shorter than the array,
 	 * it will be applied cyclically
 	 * 

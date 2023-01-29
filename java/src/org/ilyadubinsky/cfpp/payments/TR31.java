@@ -3,6 +3,7 @@ package org.ilyadubinsky.cfpp.payments;
 import java.nio.ByteBuffer;
 
 import org.ilyadubinsky.cfpp.crypto.Constants;
+import org.ilyadubinsky.cfpp.utils.BitOps;
 
 public class TR31 {
 
@@ -27,14 +28,16 @@ public class TR31 {
 	
 	public enum TR31Usage {
 
-		ENC (0x0000, "Encryption"),
-		MAC (0x0001, "MAC");
+		ENC (0x0000, (byte) 'E', "Encryption"),
+		MAC (0x0001, (byte) 'M', "MAC");
 		
 		public final int value;			/* TR31 value representing the usage */
+		final byte variantMask;  /* Mask to apply when deriving using XOR */
 		public final String name;	 	/* readable name */
 		
-		TR31Usage(int value, String name) {
+		TR31Usage(int value, byte variantMask, String name) {
 			this.value = value;
+			this.variantMask = variantMask;
 			this.name = name;
 		}
 	}
@@ -43,6 +46,13 @@ public class TR31 {
 	
 	private static final byte TR31_SEPARATOR = 0;
 
+	/**
+	 * Populates the data for the key derivation 
+	 * @param counter 	Counter of the key to derive
+	 * @param usage   	Desired usage of the key
+	 * @param algorithm Key algorithm
+	 * @return Data vector used for key derivation
+	 */
 	public static byte[] prepareDerivationBase(int counter, TR31Usage usage, TR31Algorithm algorithm) {
 		byte[] result = new byte[TR31_DERIVATION_BASE_LENGTH];
 
@@ -60,5 +70,10 @@ public class TR31 {
 		bbResult.putShort((short) algorithm.keyLenBits);
 		
 		return result;
+	}
+	
+	public static byte[] deriveVariant( byte[] key, TR31Usage usage ) {
+		// TODO validate inputs
+		return BitOps.xorArray(key, usage.variantMask);
 	}
 }
