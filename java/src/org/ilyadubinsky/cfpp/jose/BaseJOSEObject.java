@@ -13,15 +13,24 @@ public abstract class BaseJOSEObject {
 	
 	protected Map<String, Object> contents;
 	
-	protected Encoder encoder;
+	protected transient Encoder encoder; /* marked Transient so that serialization skips it */
 	
 	protected BaseJOSEObject() {
 		contents = new HashMap<String, Object>();
 		encoder =  Base64.getUrlEncoder().withoutPadding();
 	}
 	
+	Map<String, Object> getContents() {
+		return contents;
+	}
+	
+	protected void prepareSerialize() {
+		
+	}
+	
 	public String toJSON() {
 		Gson gson = new Gson();
+		prepareSerialize();
 		
 		return (gson.toJson(contents));
 	}
