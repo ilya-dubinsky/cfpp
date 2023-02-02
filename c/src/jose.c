@@ -453,7 +453,9 @@ char* jose_create_jwe(uint8_t key_protection_alg, uint8_t payload_enc_alg,
 
 	/* reallocation and reusing pointers since we only need this data in the BASE64-encoded way*/
 	jwe_protected_header = calloc(BASE64_LEN(jwe_protected_header_len), sizeof(char));
-	jwe_protected_header_len=base64url_encode((uint8_t*)jwe_protected_header_raw, jwe_protected_header_len, jwe_protected_header, BASE64_NO_PADDING);
+	jwe_protected_header_len = base64url_encode(
+			(uint8_t*) jwe_protected_header_raw, jwe_protected_header_len,
+			jwe_protected_header, BASE64_NO_PADDING);
 
 	free(jwe_protected_header_raw);
 
@@ -470,7 +472,9 @@ char* jose_create_jwe(uint8_t key_protection_alg, uint8_t payload_enc_alg,
 
 	result_len += base64url_encode(iv, iv_len, jwe_iv, BASE64_NO_PADDING) +1;
 
-	jwe_payload = jose_encrypt_payload(payload_enc_alg, cek, iv, (uint8_t*)jwe_protected_header, jwe_protected_header_len, payload, payload_len);
+	jwe_payload = jose_encrypt_payload(payload_enc_alg, cek, iv,
+			(uint8_t*) jwe_protected_header, jwe_protected_header_len, payload,
+			payload_len);
 	if (jwe_payload)
 		result_len += strlen(jwe_payload);
 
