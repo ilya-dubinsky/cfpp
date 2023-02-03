@@ -35,6 +35,10 @@ public abstract class BaseJOSEObject {
 		return (gson.toJson(contents));
 	}
 	
+	protected String encode(String value) {
+		return encode (value.getBytes(StandardCharsets.UTF_8));
+	}
+	
 	protected String encode(BigInteger value) {
 		return encode (value.toByteArray());
 	}

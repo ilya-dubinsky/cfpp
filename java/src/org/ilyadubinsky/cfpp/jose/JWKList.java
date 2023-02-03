@@ -14,7 +14,6 @@ public class JWKList extends BaseJOSEObject implements List<JWK> {
 	
 	private ArrayList<Map<String, Object>> contentsList;
 	
-	
 	public JWKList() {
 		list = new ArrayList<JWK>();
 		contentsList = new ArrayList<>();
@@ -22,6 +21,7 @@ public class JWKList extends BaseJOSEObject implements List<JWK> {
 
 	@Override
 	protected void prepareSerialize() {
+		// TODO: make this work smarter
 		for (JWK k : list)
 			contentsList.add(k.getContents());
 		
