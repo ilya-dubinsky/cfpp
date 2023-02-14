@@ -18,6 +18,8 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.DHPrivateKeySpec;
 import javax.crypto.spec.DHPublicKeySpec;
 
+import lombok.NonNull;
+
 public class AsymmetricAlgorithms {
 
 	/**
@@ -111,10 +113,9 @@ public class AsymmetricAlgorithms {
 	 * @throws IllegalBlockSizeException
 	 * @throws BadPaddingException
 	 */
-	public static byte[] decryptRSA(byte[] data, BigInteger n, BigInteger d)
+	public static byte[] decryptRSA(@NonNull byte[] data, BigInteger n, BigInteger d)
 			throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidKeyException,
 			IllegalBlockSizeException, BadPaddingException {
-		// TODO: input validation
 
 		return doDecryptRSA(data, n, d, Constants.RSA_ECB_NO_PADDING);
 	}

@@ -4,6 +4,7 @@ import java.math.BigInteger;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -159,6 +160,18 @@ public class MessageAuthenticationAlgorithms {
 
 	public static int[] AES_F_2_8_POLY = { 0x87 };
 
+	/**
+	 * Computes the CMAC value for the given image using the AES key provided.
+	 * @param image Hash input
+	 * @param key AES key to use
+	 * @return CMAC value
+	 * @throws InvalidKeyException
+	 * @throws NoSuchAlgorithmException
+	 * @throws NoSuchPaddingException
+	 * @throws IllegalBlockSizeException
+	 * @throws BadPaddingException
+	 * @throws InvalidAlgorithmParameterException
+	 */
 	public static byte[] computeAESCMAC(byte[] image, byte[] key) throws InvalidKeyException, NoSuchAlgorithmException,
 			NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
 		
@@ -224,5 +237,22 @@ public class MessageAuthenticationAlgorithms {
 		log.finest("Tag: " + IO.printByteArray(fullCiphertext));
 
 		return Arrays.copyOfRange(fullCiphertext, fullCiphertext.length-Constants.AES_BLOCK_SIZE_B, fullCiphertext.length);
+	}
+	
+	/**
+	 * Computes SHA-1 hash for the input image
+	 * @param image image to hash
+	 * @return SHA-1 digest value
+	 * @throws NoSuchAlgorithmException
+	 */
+	public static byte[] computeSHA1 (byte[] image) throws NoSuchAlgorithmException, IllegalArgumentException {
+		if (null == image)
+			throw new IllegalArgumentException( "Image can't be null" );
+		
+		MessageDigest sha1Digest = MessageDigest.getInstance(Constants.SHA1);
+		
+		sha1Digest.update(image);
+		
+		return sha1Digest.digest();
 	}
 }

@@ -32,6 +32,7 @@ public class Constants {
 
 	public static final String HMAC_SHA256 = "HmacSHA256";
 	public static final String HMAC_SHA1 = "HmacSHA1";
+	public static final String SHA1 = "SHA-1";
 
 	/* constants used to instantiate keys */
 	public static final String DSA_KEY_ALGORITHM = "DSA";
