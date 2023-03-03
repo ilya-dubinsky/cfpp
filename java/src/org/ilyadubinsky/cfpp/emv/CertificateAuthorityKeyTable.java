@@ -71,7 +71,6 @@ public class CertificateAuthorityKeyTable {
 		
 		globalTable.addCA(cak);
 
-		cak = new CertificateAuthorityKey();
 		cak.setAuthorityName("MC");
 		cak.setIndex((byte) 0x92);
 		cak.setModulus(BitOps.toByteArray(ca_pk_2));
