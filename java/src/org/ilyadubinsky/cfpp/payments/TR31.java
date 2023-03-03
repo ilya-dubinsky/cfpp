@@ -14,6 +14,7 @@ import org.ilyadubinsky.cfpp.crypto.MessageAuthenticationAlgorithms;
 import org.ilyadubinsky.cfpp.utils.BitOps;
 import org.ilyadubinsky.cfpp.utils.IO;
 
+import lombok.NonNull;
 import lombok.extern.java.Log;
 
 @Log
@@ -88,8 +89,7 @@ public class TR31 {
 		return result;
 	}
 
-	public static byte[] deriveVariantKey(byte[] fromKey, TR31Usage usage) {
-		// TODO validate inputs
+	public static byte[] deriveVariantKey(@NonNull byte[] fromKey, TR31Usage usage) {
 		return BitOps.xorArray(fromKey, usage.variantMask);
 	}
 

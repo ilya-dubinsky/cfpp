@@ -36,11 +36,9 @@ public class AsymmetricAlgorithms {
 	 * @throws IllegalBlockSizeException
 	 * @throws BadPaddingException
 	 */
-	public static byte[] encryptRSA(byte[] data, BigInteger n, BigInteger e)
+	public static byte[] encryptRSA(@NonNull byte[] data, @NonNull BigInteger n, @NonNull BigInteger e)
 			throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeySpecException, InvalidKeyException,
 			IllegalBlockSizeException, BadPaddingException {
-
-		// TODO: input validation
 		return doEncryptRSA(data, n, e, Constants.RSA_ECB_NO_PADDING);
 
 	}
@@ -59,10 +57,9 @@ public class AsymmetricAlgorithms {
 	 * @throws IllegalBlockSizeException
 	 * @throws BadPaddingException
 	 */
-	public static byte[] encryptRSA_OAEP(byte[] data, BigInteger n, BigInteger e)
+	public static byte[] encryptRSA_OAEP(@NonNull byte[] data, @NonNull BigInteger n, @NonNull BigInteger e)
 			throws InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException,
 			IllegalBlockSizeException, BadPaddingException {
-		// TODO: input validation
 		return doEncryptRSA(data, n, e, Constants.RSA_ECB_OAEP);
 	}
 
@@ -134,11 +131,9 @@ public class AsymmetricAlgorithms {
 	 * @throws IllegalBlockSizeException
 	 * @throws BadPaddingException
 	 */
-	public static byte[] decryptRSA_OAEP(byte[] data, BigInteger n, BigInteger d)
+	public static byte[] decryptRSA_OAEP(@NonNull byte[] data, @NonNull BigInteger n, @NonNull BigInteger d)
 			throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidKeyException,
 			IllegalBlockSizeException, BadPaddingException {
-		// TODO: input validation
-
 		return doDecryptRSA(data, n, d, Constants.RSA_ECB_OAEP);
 	}
 
@@ -186,10 +181,8 @@ public class AsymmetricAlgorithms {
 	 * @throws InvalidKeyException
 	 * @throws IllegalStateException
 	 */
-	public static byte[] generateDHKey(BigInteger p, BigInteger g, BigInteger ourX, BigInteger theirY)
+	public static byte[] generateDHKey(@NonNull BigInteger p, @NonNull BigInteger g, @NonNull BigInteger ourX, @NonNull BigInteger theirY)
 			throws NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException, IllegalStateException {
-		// TODO: validate input
-		
 		/* prepare the key specs */
 		DHPrivateKeySpec ourKeySpec = new DHPrivateKeySpec(ourX, p, g);
 		DHPublicKeySpec theirKeySpec = new DHPublicKeySpec(theirY, p, g);
