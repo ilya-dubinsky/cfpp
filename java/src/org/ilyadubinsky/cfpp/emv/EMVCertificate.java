@@ -7,7 +7,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 
-public class EMVKey {
+public class EMVCertificate {
 	
 	
 
@@ -29,7 +29,7 @@ public class EMVKey {
 
 	@Getter
 	@Setter(AccessLevel.PACKAGE)
-	protected EMVKey parentKey;
+	protected EMVCertificate parentCertificate;
 
 	@Getter
 	@Setter(AccessLevel.PACKAGE)

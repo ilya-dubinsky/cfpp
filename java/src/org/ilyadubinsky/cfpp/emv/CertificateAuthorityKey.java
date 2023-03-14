@@ -7,7 +7,7 @@ import lombok.Setter;
 import lombok.extern.java.Log;
 
 @Log
-public class CertificateAuthorityKey extends EMVKey {
+public class CertificateAuthorityKey extends EMVCertificate {
 	
 	@Getter @Setter
 	private String authorityName;

@@ -11,7 +11,7 @@ import javax.crypto.NoSuchPaddingException;
 
 import lombok.NonNull;
 
-public class IssuerPublicKey extends EMVRecoverableKey {
+public class IssuerPublicKey extends EMVRecoverableCertificate {
 
 	private final static byte ISSUER_CERTIFICATE_FORMAT = 0x02;
 
@@ -25,7 +25,7 @@ public class IssuerPublicKey extends EMVRecoverableKey {
 			throw new UnsupportedOperationException(String.format("Unsupported certificate format: %2X", certificateFormat));
 	}
 
-	public static EMVRecoverableKey recoverKey(byte caPublicKeyIndex, @NonNull byte[] certificate, byte[] remainder,
+	public static EMVRecoverableCertificate recoverKey(byte caPublicKeyIndex, @NonNull byte[] certificate, byte[] remainder,
 			int exponent)
 			throws IllegalArgumentException, InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException,
 			NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, SignatureException {
@@ -34,8 +34,8 @@ public class IssuerPublicKey extends EMVRecoverableKey {
 		/* locate and set the CA */
 		CertificateAuthorityKey caKey = CertificateAuthorityKey.getCAKey(caPublicKeyIndex);
 
-		EMVRecoverableKey result = new IssuerPublicKey();
-		return (EMVRecoverableKey) doRecoverKey(result, caKey, certificate, exponent, remainder);
+		EMVRecoverableCertificate result = new IssuerPublicKey();
+		return (EMVRecoverableCertificate) doRecoverKey(result, caKey, certificate, exponent, remainder);
 
 	}
 

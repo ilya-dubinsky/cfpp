@@ -20,16 +20,16 @@ import lombok.Getter;
 import lombok.extern.java.Log;
 
 @Log
-public abstract class EMVRecoverableKey extends EMVKey {
+public abstract class EMVRecoverableCertificate extends EMVCertificate {
 
-	protected static EMVRecoverableKey doRecoverKey(EMVRecoverableKey result, EMVKey parentKey, byte[] certificate, int exponent, byte[] remainder)
+	protected static EMVRecoverableCertificate doRecoverKey(EMVRecoverableCertificate result, EMVCertificate parentKey, byte[] certificate, int exponent, byte[] remainder)
 			throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidKeyException,
 			IllegalBlockSizeException, BadPaddingException, SignatureException {
 		
-				result.setParentKey(parentKey);
+				result.setParentCertificate(parentKey);
 			
-				byte[] decipheredKey = AsymmetricAlgorithms.decryptRSA(certificate, new BigInteger(result.getParentKey().getModulus()),
-						BigInteger.valueOf(result.getParentKey().getPublicExponent()));
+				byte[] decipheredKey = AsymmetricAlgorithms.decryptRSA(certificate, new BigInteger(result.getParentCertificate().getModulus()),
+						BigInteger.valueOf(result.getParentCertificate().getPublicExponent()));
 			
 				byte[] fullKey = new byte[decipheredKey.length + ((remainder != null) ? remainder.length : 0)];
 				
@@ -220,7 +220,7 @@ public abstract class EMVRecoverableKey extends EMVKey {
 				this.readEndSentinel(buffer);
 			
 				/* determine if padding is required */
-				int paddingLength = this.getParentKey().getModulus().length 
+				int paddingLength = this.getParentCertificate().getModulus().length 
 						- this.getOverheadSize() - this.getPkLength();
 				if (paddingLength < 0)
 					paddingLength = 0;
@@ -275,12 +275,12 @@ public abstract class EMVRecoverableKey extends EMVKey {
 	@Override
 	public String toString() {
 		StringBuilder builder = new StringBuilder();
-		builder.append(getParentKey().toString());
+		builder.append(getParentCertificate().toString());
 	
 		builder.append(IO.SEPARATOR).append('\n').append(getEntityName()).append(" key\n").append(IO.SEPARATOR).append('\n');
 	
-		if (this.getParentKey() instanceof CertificateAuthorityKey) {
-			CertificateAuthorityKey caKey = (CertificateAuthorityKey) this.getParentKey();
+		if (this.getParentCertificate() instanceof CertificateAuthorityKey) {
+			CertificateAuthorityKey caKey = (CertificateAuthorityKey) this.getParentCertificate();
 			builder.append("\tCA PK ID               : ").append(String.format("%02X", caKey.getIndex())).append('\n');
 		}
 		

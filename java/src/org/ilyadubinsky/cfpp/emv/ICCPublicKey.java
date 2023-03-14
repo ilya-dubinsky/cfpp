@@ -11,18 +11,18 @@ import javax.crypto.NoSuchPaddingException;
 
 import lombok.NonNull;
 
-public class ICCPublicKey extends EMVRecoverableKey {
+public class ICCPublicKey extends EMVRecoverableCertificate {
 
 	private final static byte ICC_CERTIFICATE_FORMAT = 0x04;
 
 	
-	public static ICCPublicKey recoverKey(EMVRecoverableKey issuerKey, @NonNull byte[] certificate, byte[] remainder,
+	public static ICCPublicKey recoverKey(EMVRecoverableCertificate issuerKey, @NonNull byte[] certificate, byte[] remainder,
 			int exponent)
 			throws IllegalArgumentException, InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException,
 			NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, SignatureException {
 
 		/* instantiate a new object */
-		EMVRecoverableKey result = new ICCPublicKey();
+		EMVRecoverableCertificate result = new ICCPublicKey();
 
 		return (ICCPublicKey) doRecoverKey(result, issuerKey, certificate, exponent, remainder);
 
