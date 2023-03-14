@@ -5,3 +5,8 @@ server.crt
 server.csr
 server.key
 bin/
+c/.cproject
+c/.project
+c/.settings
+c/build/CMakeCache.txt
+c/build/Makefile
