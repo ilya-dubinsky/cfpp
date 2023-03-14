@@ -381,7 +381,7 @@ void test_icc_e2e () {
 				p->auth_data, p->auth_data_len, icc_cert,
 				icc_cert_remainder, &icc_cert_remainder_len);
 
-		print_test_step(2, "Recover the ICC");
+		print_test_step(2, "Recover the ICC PK");
 
 		uint8_t recovered_icc_key[EMV_MAX_CA_KEY_SIZE];
 		ICC_PK_DETAILS_HEADER recovered_header;
