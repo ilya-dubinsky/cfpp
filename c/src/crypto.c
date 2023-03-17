@@ -17,16 +17,24 @@
  * @param d_len size of the private key, must be 0 if d is NULL
  * @result the RSA structure or NULL if an error occurred
  */
+
 RSA *make_rsa_key( uint8_t n[], size_t n_len, uint32_t e, uint8_t d[], size_t d_len ) {
 	/* validate the inputs */
 	if (! (n&& n_len)) return NULL;
 	/* allocate the RSA structure */
+
 	RSA* retval = RSA_new();
 	if (!retval) return retval;
 
 	/* allocate the BIGNUMs */
 	BIGNUM * bn_n = BN_bin2bn(n, n_len, NULL);
 	if (!bn_n) goto cleanup;
+
+	/* check if the BN is negative */
+	if (BN_is_negative(bn_n)) {
+		/* workaround the "missing leading zero" issue */
+		BN_set_negative(bn_n, 0);
+	}
 
 	BIGNUM *bn_e = BN_new();
 	if (!bn_e) goto cleanup;
