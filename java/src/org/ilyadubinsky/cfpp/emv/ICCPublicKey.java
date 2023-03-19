@@ -11,20 +11,22 @@ import javax.crypto.NoSuchPaddingException;
 
 import lombok.NonNull;
 
-public class ICCPublicKey extends EMVRecoverableCertificate {
+public class ICCPublicKey extends EMVRecoverableKey {
 
+	private static final long serialVersionUID = 8405019478995693551L;
 	private final static byte ICC_CERTIFICATE_FORMAT = 0x04;
 
 	
-	public static ICCPublicKey recoverKey(EMVRecoverableCertificate issuerKey, @NonNull byte[] certificate, byte[] remainder,
+	public static ICCPublicKey recoverKey(EMVKeyPair issuerKey, @NonNull byte[] certificate, byte[] remainder,
 			int exponent)
 			throws IllegalArgumentException, InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException,
 			NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, SignatureException {
 
 		/* instantiate a new object */
-		EMVRecoverableCertificate result = new ICCPublicKey();
+		EMVRecoverableKey result = new ICCPublicKey();
+		result.setPublicExponent(exponent);
 
-		return (ICCPublicKey) doRecoverKey(result, issuerKey, certificate, exponent, remainder);
+		return (ICCPublicKey) doRecoverData(result, issuerKey, certificate, remainder, null);
 
 	}
 
@@ -47,6 +49,11 @@ public class ICCPublicKey extends EMVRecoverableCertificate {
 	@Override
 	protected int getOverheadSize() {
 		return 42;
+	}
+
+	@Override
+	protected int getExtraDataSize() {
+		return this.getPublicExponentLength();
 	}
 
 }

@@ -21,7 +21,7 @@ import javax.crypto.spec.DHPublicKeySpec;
 import lombok.NonNull;
 
 public class AsymmetricAlgorithms {
-
+	
 	/**
 	 * Encrypts the data with the RSA algorithm w/o padding
 	 * 
@@ -113,7 +113,15 @@ public class AsymmetricAlgorithms {
 	public static byte[] decryptRSA(@NonNull byte[] data, BigInteger n, BigInteger d)
 			throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidKeyException,
 			IllegalBlockSizeException, BadPaddingException {
-
+		
+		/* work around an issue when the n is converted from a byte array without the leading zero */
+		if (n.compareTo(BigInteger.ZERO) <0 ) {
+			byte [] number = n.toByteArray();
+			byte [] fixedInt = new byte[number.length+1];
+			System.arraycopy(number, 0, fixedInt, 1, number.length);
+			n = new BigInteger(fixedInt);
+		}
+		
 		return doDecryptRSA(data, n, d, Constants.RSA_ECB_NO_PADDING);
 	}
 
