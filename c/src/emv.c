@@ -1003,7 +1003,7 @@ static int emv_derive_icc_master_key_des(uint8_t *unpacked_input, size_t unpacke
 	else {
 		/* pack with left padding by 1 nibble if odd */
 		pack_bcd(unpacked_input, unpacked_input_len, enc_input,  (unpacked_input_len+1)>>1,  PAD_LEFT);
-		print_array("\tPacked input: ", enc_input, TDES_BLOCK_SIZE<<1, "\n");
+		print_array("\tPacked input: ", enc_input, (unpacked_input_len+1)>>1, "\n");
 		uint8_t hash_output[SHA_DIGEST_LENGTH];
 		SHA1((unsigned char*)enc_input, (unpacked_input_len+1)>>1, (unsigned char*)&hash_output);
 
