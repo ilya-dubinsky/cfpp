@@ -29,6 +29,9 @@ public class IO {
 	public static String printByteArray(byte[] array, String prefix, boolean groupBytes) {
 		StringBuffer buffer = new StringBuffer();
 		
+		if (null == array)
+			return "";
+		
 		int i = 0 ;
 		for (byte b : array) {
 			if (i%WRAP_WIDTH==0) /* we had just wrapped a line*/
