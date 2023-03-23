@@ -10,3 +10,4 @@ c/.project
 c/.settings
 c/build/CMakeCache.txt
 c/build/Makefile
+c/build/cmake_install.cmake

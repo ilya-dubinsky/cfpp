@@ -16,6 +16,7 @@ import org.ilyadubinsky.cfpp.crypto.Utils;
 import org.ilyadubinsky.cfpp.utils.BitOps;
 import org.ilyadubinsky.cfpp.utils.IO;
 
+import lombok.NonNull;
 import lombok.extern.java.Log;
 
 @Log
@@ -39,12 +40,11 @@ public class Legacy {
 	 * @throws IllegalBlockSizeException
 	 * @throws BadPaddingException
 	 */
-	public static byte[] computeCVV(byte[] unpackedPAN, byte[] expiry, byte[] serviceCode, byte[] cvkA, byte[] cvkB,
+	public static byte[] computeCVV(@NonNull byte[] unpackedPAN, @NonNull byte[] expiry, @NonNull  byte[] serviceCode, @NonNull byte[] cvkA, @NonNull byte[] cvkB,
 			int desiredLength) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException,
 			ShortBufferException, IllegalBlockSizeException, BadPaddingException {
 		/* validate inputs */
-		if (unpackedPAN == null || expiry == null || serviceCode == null || cvkA == null || cvkB == null
-				|| unpackedPAN.length == 0 || expiry.length == 0 || serviceCode.length == 0 || cvkA.length == 0
+		if (unpackedPAN.length == 0 || expiry.length == 0 || serviceCode.length == 0 || cvkA.length == 0
 				|| cvkB.length == 0 || desiredLength == 0)
 			return null;
 
@@ -110,11 +110,10 @@ public class Legacy {
 	 * @throws IllegalBlockSizeException
 	 * @throws BadPaddingException
 	 */
-	public static byte[] computePVV(byte[] unpackedPAN, byte[] unpackedPIN, byte pvki, byte[] pvkA, byte[] pvkB,
+	public static byte[] computePVV(@NonNull byte[] unpackedPAN, @NonNull byte[] unpackedPIN, byte pvki, @NonNull byte[] pvkA, @NonNull byte[] pvkB,
 			int desiredLength) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException,
 			ShortBufferException, IllegalBlockSizeException, BadPaddingException {
-		if (unpackedPAN == null || unpackedPIN == null || pvkA == null || pvkB == null || unpackedPAN.length == 0
-				|| unpackedPIN.length == 0 || pvkA.length == 0 || pvkB.length == 0)
+		if (unpackedPAN.length == 0 || unpackedPIN.length == 0 || pvkA.length == 0 || pvkB.length == 0)
 			return null;
 		byte[] unpackedInput = new byte[16];
 

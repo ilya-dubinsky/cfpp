@@ -26,6 +26,7 @@ import javax.crypto.spec.SecretKeySpec;
 import org.ilyadubinsky.cfpp.utils.BitOps;
 import org.ilyadubinsky.cfpp.utils.IO;
 
+import lombok.NonNull;
 import lombok.extern.java.Log;
 
 @Log
@@ -45,11 +46,8 @@ public class MessageAuthenticationAlgorithms {
 	 * @throws InvalidKeyException
 	 * @throws SignatureException
 	 */
-	public static byte[] signDSA(byte[] image, BigInteger x, BigInteger p, BigInteger q, BigInteger g)
+	public static byte[] signDSA(@NonNull byte[] image, BigInteger x, BigInteger p, BigInteger q, BigInteger g)
 			throws NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException, SignatureException {
-		if (null == image)
-			return null;
-
 		/*
 		 * Create a private key spec from the domain parameters p,g,q, and the private
 		 * key x
@@ -101,12 +99,9 @@ public class MessageAuthenticationAlgorithms {
 	 * @throws SignatureException
 	 * @throws InvalidKeyException
 	 */
-	public static boolean verifyDSA(byte[] image, byte[] signature, BigInteger y, BigInteger p, BigInteger q,
+	public static boolean verifyDSA(@NonNull byte[] image, @NonNull byte[] signature, BigInteger y, BigInteger p, BigInteger q,
 			BigInteger g)
 			throws NoSuchAlgorithmException, InvalidKeySpecException, SignatureException, InvalidKeyException {
-
-		if (null == image || null == signature)
-			return false;
 
 		/*
 		 * Create a public key spec from the domain parameters p,g,q, and the public key
@@ -141,10 +136,7 @@ public class MessageAuthenticationAlgorithms {
 	 * @throws NoSuchAlgorithmException
 	 * @throws InvalidKeyException
 	 */
-	public static byte[] computeHMAC(byte[] image, byte[] key) throws NoSuchAlgorithmException, InvalidKeyException {
-		if (null == image || null == key)
-			return null;
-
+	public static byte[] computeHMAC(@NonNull byte[] image, @NonNull byte[] key) throws NoSuchAlgorithmException, InvalidKeyException {
 		/* wrap the key */
 		SecretKeySpec hmacKeySpec = new SecretKeySpec(key, Constants.HMAC_SHA1);
 
@@ -172,11 +164,8 @@ public class MessageAuthenticationAlgorithms {
 	 * @throws BadPaddingException
 	 * @throws InvalidAlgorithmParameterException
 	 */
-	public static byte[] computeAESCMAC(byte[] image, byte[] key) throws InvalidKeyException, NoSuchAlgorithmException,
+	public static byte[] computeAESCMAC(@NonNull byte[] image, @NonNull byte[] key) throws InvalidKeyException, NoSuchAlgorithmException,
 			NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
-		
-		if (null == image || null == key || !SymmetricAlgorithms.isValidAESKeyLength(key.length))
-			return null;
 
 		/* first, we derive the keys, k1 and k2 */
 		byte[] zeroBlock = new byte[Constants.AES_BLOCK_SIZE_B];
@@ -245,9 +234,7 @@ public class MessageAuthenticationAlgorithms {
 	 * @return SHA-1 digest value
 	 * @throws NoSuchAlgorithmException
 	 */
-	public static byte[] computeSHA1 (byte[] image) throws NoSuchAlgorithmException, IllegalArgumentException {
-		if (null == image)
-			throw new IllegalArgumentException( "Image can't be null" );
+	public static byte[] computeSHA1 (@NonNull byte[] image) throws NoSuchAlgorithmException, IllegalArgumentException {
 		
 		MessageDigest sha1Digest = MessageDigest.getInstance(Constants.SHA1);
 		
