@@ -12,7 +12,9 @@ import javax.crypto.spec.SecretKeySpec;
 import org.ilyadubinsky.cfpp.utils.IO;
 
 import lombok.NonNull;
+import lombok.extern.java.Log;
 
+@Log
 public class SymmetricAlgorithms {
 
 	/**
@@ -74,8 +76,8 @@ public class SymmetricAlgorithms {
 		
 		byte[] tdesKey = getFullLengthTDESKey(key);
 
-		System.out.println("Input: " + IO.printByteArray(plainInput));
-		System.out.println("Full key: " + IO.printByteArray(tdesKey));
+		log.finest("TDES input: " + IO.printByteArray(plainInput));
+		log.finest("Full key: " + IO.printByteArray(tdesKey));
 
 		Cipher c = Cipher.getInstance(Constants.TDES_ECB_NO_PADDING_ALGORITHM);
 
@@ -104,8 +106,8 @@ public class SymmetricAlgorithms {
 
 		byte[] tdesKey = getFullLengthTDESKey(key);
 
-		System.out.println("Input: " + IO.printByteArray(cipherInput));
-		System.out.println("Full key: " + IO.printByteArray(tdesKey));
+		log.finest("TDES Input: " + IO.printByteArray(cipherInput));
+		log.finest("Full key: " + IO.printByteArray(tdesKey));
 
 		Cipher c = Cipher.getInstance(Constants.TDES_ECB_NO_PADDING_ALGORITHM);
 

@@ -441,4 +441,25 @@ public class BitOps {
 		}
 		return result;
 	}
+	
+	/**
+	 * Concatenates two byte arrays
+	 * @param array1 First array
+	 * @param array2 Second array
+	 * @return Concatenation, or an empty array if both inputs are null
+	 */
+	public static byte [] concatenate (byte[] array1, byte[] array2) {
+		byte[] result = new byte[ (array1==null?0:array1.length) + (array2==null?0:array2.length)];
+		int position = 0;
+		
+		if (array1!=null) {
+			System.arraycopy(array1, 0, result, position, array1.length);
+			position += array1.length;
+		}
+		if (array2!=null) {
+			System.arraycopy(array2, 0, result, position, array2.length);
+		}
+		
+		return result;
+	}
 }
