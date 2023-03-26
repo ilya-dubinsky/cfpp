@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <arpa/inet.h>
+#include <netinet/in.h>
 
 #include <openssl/rsa.h>
 #include <openssl/evp.h>
@@ -298,7 +298,7 @@ static char* jose_encrypt_payload(uint8_t payload_enc_alg, uint8_t *cek,
 
 			/* The following is fine but prompts a warning */
 #pragma GCC diagnostic ignored "-Wunsequenced"
-			aad_len_64 = HTONLL(aad_len_64);
+			aad_len_64 = htonll(aad_len_64);
 
 			print_array("\t\tAAD length: ", (uint8_t*) &aad_len_64, HMAC_AAD_LEN_SIZE, "\n");
 
