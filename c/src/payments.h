@@ -11,6 +11,9 @@
 #define PAYMENTS_ERROR 	-1
 #define PAYMENTS_SUCCESS 0
 
+#include <stdint.h>
+
+
 
 /**
  * Computes the CVV value
