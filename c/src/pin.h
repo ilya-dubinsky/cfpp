@@ -2,6 +2,7 @@
 #define CFPP_PIN_H_
 
 #include <stdlib.h>
+#include <stdint.h>
 
 #define PIN_BLOCK_FORMAT_0 0
 #define PIN_BLOCK_FORMAT_1 1
