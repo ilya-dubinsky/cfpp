@@ -13,6 +13,15 @@
 
 #include <openssl/bn.h>
 
+#ifndef htonll
+#if BYTE_ORDER == BIG_ENDIAN
+#define htonll(x) (x)
+#else
+#define htonll(x) (((uint64_t)htonl(x)) << 32) + htonl(x >> 32)
+#endif
+#endif
+
+
 /* Use this for the encrypted CEK to be fixed value according to the example from RFC 5716 */
 #define RFC_5716_TEST
 

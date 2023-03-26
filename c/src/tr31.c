@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <arpa/inet.h>
+#include <netinet/in.h>
 
 #include "tr31.h"
 #include "bits.h"
@@ -72,15 +72,15 @@ int tr31_prepare_key_derivation(TR31_KEY_DERIVATION_BASE * base, uint8_t counter
 	base->counter = counter;
 
 	if (! VALID_KEY_USAGE(key_usage)) return TR31_ERROR;
-	*(uint16_t*) &base->key_usage = HTONS(key_usage);
+	*(uint16_t*) &base->key_usage = htons(key_usage);
 
 	base->separator = TR31_SEPARATOR;
 
 	if (! VALID_ALGORITHM(algorithm) )
 		return TR31_ERROR;
 
-	*(uint16_t*) &base->length = HTONS(bit_key_length [algorithm]); /* the order is important since HTONS has a side effect */
-	*(uint16_t*) &base->algorithm = HTONS(algorithm);
+	*(uint16_t*) &base->length = htons(bit_key_length [algorithm]); 
+	*(uint16_t*) &base->algorithm = htons(algorithm);
 
 	result = TR31_OK;
 	return result;

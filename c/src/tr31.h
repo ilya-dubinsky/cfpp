@@ -3,6 +3,7 @@
 #define CFPP_TR31_H_
 
 #include <stdlib.h>
+#include <stdint.h>
 
 #define TR31_OK 0
 #define TR31_ERROR -1
