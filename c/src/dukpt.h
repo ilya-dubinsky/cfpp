@@ -3,6 +3,7 @@
 #define CFPP_SRC_DUKPT_H_
 
 #include <stdlib.h>
+#include <stdint.h>
 
 #define DUKPT_SUCCESS 0
 #define DUKPT_ERROR -1
