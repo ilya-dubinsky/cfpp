@@ -12,7 +12,7 @@
 #include <openssl/cmac.h>
 #include <openssl/err.h>
 
-#include <arpa/inet.h>
+#include <netinet/in.h>
 
 #include "crypto.h"
 #include "bits.h"
@@ -271,7 +271,7 @@ int emv_recover_issuer_public_key(uint8_t ca_pk_idx, uint8_t *issuer_pk_cert,
 		hash_function_input[hash_buffer_ptr++] = issuer_pk_exponent;
 	}
 	else {
-		uint32_t network_order = HTONL(issuer_pk_exponent);
+		uint32_t network_order = htonl(issuer_pk_exponent);
 		memcpy(hash_function_input + hash_buffer_ptr, ((uint8_t*)&network_order)+1, 3);
 
 		hash_buffer_ptr += 3;
@@ -376,7 +376,7 @@ int emv_recover_icc_key(uint8_t *icc_cert, size_t icc_cert_len,
 		hash_input[hash_ptr++] = icc_exponent;
 	}
 	else {
-		uint32_t network_order = HTONL(icc_exponent);
+		uint32_t network_order = htonl(icc_exponent);
 		memcpy(hash_input + hash_ptr, ((uint8_t*)&network_order)+1, 3);
 
 		hash_ptr += 3;
@@ -524,7 +524,7 @@ int emv_sign_issuer_public_key(uint8_t ca_index, uint8_t * issuer_pk, uint32_t i
 		hash_input[hash_ptr++] = (uint8_t)issuer_pk_exponent;
 	} else
 	{
-		uint32_t network_order = HTONL(issuer_pk_exponent);
+		uint32_t network_order = htonl(issuer_pk_exponent);
 		memcpy(hash_input + hash_ptr, ((uint8_t*)&network_order)+1, 3);
 		hash_ptr+=3;
 	}
@@ -903,7 +903,7 @@ int emv_sign_icc_public_key(uint8_t * issuer_pub_key, size_t issuer_pub_key_len,
 	if (icc_details->icc_pk_exponent_len == 1) {
 		buffer[buffer_ptr++] = icc_pk_exponent;
 	} else {
-		uint32_t network_order = HTONL(icc_pk_exponent);
+		uint32_t network_order = htonl(icc_pk_exponent);
 		memcpy(buffer + buffer_ptr, ((uint8_t*)&network_order)+1, 3);
 		buffer_ptr +=3;
 	}
