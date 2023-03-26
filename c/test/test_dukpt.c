@@ -6,7 +6,7 @@
 #include <string.h>
 
 #ifndef _WIN32
-#define __ATTR_ALIGN_4__ __attribute__((aligned(4))
+#define __ATTR_ALIGN_4__ __attribute__ ((aligned(4)))
 #else
 #define __ATTR_ALIGN_4__ __declspec(align(4))
 #endif
