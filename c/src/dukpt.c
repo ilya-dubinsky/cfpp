@@ -12,7 +12,11 @@
 #include <openssl/des.h>
 #include <openssl/aes.h>
 
-#include <arpa/inet.h>
+#ifdef _WIN32
+#include <WinSock2.h>
+#else
+#include <netinet/in.h>
+#endif
 
 #include <string.h>
 #include <stdlib.h>

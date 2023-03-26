@@ -19,3 +19,7 @@ if(Doxygen_FOUND)
 	set(DOXYGEN_EXTRACT_ALL "YES")
 	doxygen_add_docs(docs ${HEADERS} ${SOURCES})
 endif()
+
+if(WIN32)
+	target_link_libraries(cfpp ws2_32)
+endif()

@@ -7,7 +7,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef _WIN32
+#include <WinSock2.h>
+#else
 #include <netinet/in.h>
+#endif
 
 #include <openssl/rsa.h>
 #include <openssl/evp.h>
