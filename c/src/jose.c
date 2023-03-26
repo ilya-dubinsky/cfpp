@@ -297,7 +297,6 @@ static char* jose_encrypt_payload(uint8_t payload_enc_alg, uint8_t *cek,
 			/* Compute the 64-bit length of the AAD */
 
 			/* The following is fine but prompts a warning */
-#pragma GCC diagnostic ignored "-Wunsequenced"
 			aad_len_64 = htonll(aad_len_64);
 
 			print_array("\t\tAAD length: ", (uint8_t*) &aad_len_64, HMAC_AAD_LEN_SIZE, "\n");
