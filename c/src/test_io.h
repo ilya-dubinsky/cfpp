@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 
 /** The functions in this module are used to print out intermediate steps
  *  of various functions and examples provided elsewhere.
