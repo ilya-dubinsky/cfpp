@@ -1,5 +1,6 @@
 package org.ilyadubinsky.cfpp.crypto;
 
+import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 
@@ -7,6 +8,7 @@ import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
+import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.ilyadubinsky.cfpp.utils.IO;
@@ -27,8 +29,9 @@ public class SymmetricAlgorithms {
 	 * @throws IllegalBlockSizeException
 	 * @throws BadPaddingException
 	 */
-	public static byte[] encryptDESBlock(@NonNull byte[] plainInput, @NonNull byte[] key) throws NoSuchAlgorithmException,
-			NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+	public static byte[] encryptDESBlock(@NonNull byte[] plainInput, @NonNull byte[] key)
+			throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException,
+			BadPaddingException {
 
 		Cipher c = Cipher.getInstance(Constants.DES_ECB_NO_PADDING_ALGORITHM);
 
@@ -49,8 +52,9 @@ public class SymmetricAlgorithms {
 	 * @throws IllegalBlockSizeException
 	 * @throws BadPaddingException
 	 */
-	public static byte[] decryptDESBlock(@NonNull byte[] cipherInput, @NonNull byte[] key) throws NoSuchAlgorithmException,
-			NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+	public static byte[] decryptDESBlock(@NonNull byte[] cipherInput, @NonNull byte[] key)
+			throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException,
+			BadPaddingException {
 
 		Cipher c = Cipher.getInstance(Constants.DES_ECB_NO_PADDING_ALGORITHM);
 
@@ -71,9 +75,10 @@ public class SymmetricAlgorithms {
 	 * @throws IllegalBlockSizeException
 	 * @throws BadPaddingException
 	 */
-	public static byte[] encryptTDESBlock(@NonNull byte[] plainInput, @NonNull byte[] key) throws NoSuchAlgorithmException,
-			NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
-		
+	public static byte[] encryptTDESBlock(@NonNull byte[] plainInput, @NonNull byte[] key)
+			throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException,
+			BadPaddingException {
+
 		byte[] tdesKey = getFullLengthTDESKey(key);
 
 		log.finest("TDES input: " + IO.printByteArray(plainInput));
@@ -91,6 +96,43 @@ public class SymmetricAlgorithms {
 	}
 
 	/**
+	 * @param paddedInput Input vector, must be padded to the size of the DES input block.
+	 * @param key Key to use for encryption.
+	 * @param iv Initialization vector, all zeroes will be used if not provided
+	 * @return Encrypted value.
+	 * @throws NoSuchAlgorithmException
+	 * @throws NoSuchPaddingException
+	 * @throws InvalidKeyException
+	 * @throws IllegalBlockSizeException
+	 * @throws BadPaddingException
+	 * @throws InvalidAlgorithmParameterException 
+	 */
+	public static byte[] encryptTDESData(@NonNull byte[] paddedInput, @NonNull byte[] key, byte [] iv)
+			throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException,
+			BadPaddingException, InvalidAlgorithmParameterException {
+		
+		byte[] tdesKey = getFullLengthTDESKey(key);
+		
+		if ( null == iv)
+			iv = new byte[Constants.DES_BLOCK_SIZE_B];
+
+		log.finest("TDES input: " + IO.printByteArray(paddedInput));
+		log.finest("Full key: " + IO.printByteArray(tdesKey));
+
+		Cipher c = Cipher.getInstance(Constants.TDES_CBC_NO_PADDING_ALGORITHM);
+		IvParameterSpec ivSpec = new IvParameterSpec(iv);
+
+		SecretKeySpec encKey = new SecretKeySpec(tdesKey, Constants.TDES_KEY_ALGORITHM);
+	
+
+		c.init(Cipher.ENCRYPT_MODE, encKey, ivSpec);
+
+		byte[] output = c.doFinal(paddedInput);
+
+		return output;
+	}
+
+	/**
 	 * @param cipherInput Input vector, must be a single block
 	 * @param key         Encryption key, must be a DES single, double, or triple
 	 *                    key
@@ -101,8 +143,9 @@ public class SymmetricAlgorithms {
 	 * @throws IllegalBlockSizeException
 	 * @throws BadPaddingException
 	 */
-	public static byte[] decryptTDESBlock(@NonNull byte[] cipherInput, @NonNull byte[] key) throws NoSuchAlgorithmException,
-			NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+	public static byte[] decryptTDESBlock(@NonNull byte[] cipherInput, @NonNull byte[] key)
+			throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException,
+			BadPaddingException {
 
 		byte[] tdesKey = getFullLengthTDESKey(key);
 
@@ -122,8 +165,9 @@ public class SymmetricAlgorithms {
 
 	/**
 	 * Returns the AES-encrypted single block
+	 * 
 	 * @param plainInput input data, must be a single block
-	 * @param key input key, must have a valid AES key length
+	 * @param key        input key, must have a valid AES key length
 	 * @return Encrypted value or null if input params are invalid
 	 * @throws NoSuchAlgorithmException
 	 * @throws NoSuchPaddingException
@@ -131,9 +175,10 @@ public class SymmetricAlgorithms {
 	 * @throws IllegalBlockSizeException
 	 * @throws BadPaddingException
 	 */
-	public static byte[] encryptAESBlock(@NonNull byte[] plainInput, @NonNull byte[] key) throws NoSuchAlgorithmException,
-			NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
-		
+	public static byte[] encryptAESBlock(@NonNull byte[] plainInput, @NonNull byte[] key)
+			throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException,
+			BadPaddingException {
+
 		Cipher c = Cipher.getInstance(Constants.AES_ECB_NO_PADDING);
 
 		SecretKeySpec encKey = new SecretKeySpec(key, Constants.AES_KEY_ALGORITHM);
@@ -144,11 +189,12 @@ public class SymmetricAlgorithms {
 
 		return output;
 	}
-	
+
 	/**
 	 * Returns the AES-decrypted single block
+	 * 
 	 * @param cipherInput input data, must be a single block
-	 * @param key input key, must have a valid AES key length
+	 * @param key         input key, must have a valid AES key length
 	 * @return Decrypted value or null if input params are invalid
 	 * @throws NoSuchAlgorithmException
 	 * @throws NoSuchPaddingException
@@ -156,8 +202,9 @@ public class SymmetricAlgorithms {
 	 * @throws IllegalBlockSizeException
 	 * @throws BadPaddingException
 	 */
-	public static byte[] decryptAESBlock(@NonNull byte[] cipherInput, @NonNull byte[] key) throws NoSuchAlgorithmException,
-			NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+	public static byte[] decryptAESBlock(@NonNull byte[] cipherInput, @NonNull byte[] key)
+			throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException,
+			BadPaddingException {
 		Cipher c = Cipher.getInstance(Constants.AES_ECB_NO_PADDING);
 
 		SecretKeySpec encKey = new SecretKeySpec(key, Constants.AES_KEY_ALGORITHM);

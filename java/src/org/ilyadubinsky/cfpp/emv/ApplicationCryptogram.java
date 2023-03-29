@@ -1,7 +1,9 @@
 package org.ilyadubinsky.cfpp.emv;
 
+import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
@@ -173,7 +175,55 @@ public class ApplicationCryptogram {
 			System.arraycopy(keyPart, 0, output, i * blockSize, blockSize);
 		}
 
+		
+		if (Constants.DES_KEY_ALGORITHM == keyAlgorithm)
+			output = BitOps.fixParity(output, false);
+		
 		log.finest("ICC session key: " + IO.printByteArray(output));
+
 		return output;
 	}
+
+	/**
+	 * Generates the ARQC based on the given session key.
+	 * @param data Data to use for ARQC generation.
+	 * @param iccSessionKey Session key, derived according to the EMV spec.
+	 * @param keyAlgorithm Algorithm to use, can be either "AES" or "DES".
+	 * @return ARQC value (CMAC in case of AES, or last block of a CBC chain in case of TDES).
+	 * @throws NoSuchAlgorithmException
+	 * @throws InvalidKeyException
+	 * @throws NoSuchPaddingException
+	 * @throws IllegalBlockSizeException
+	 * @throws BadPaddingException
+	 * @throws InvalidAlgorithmParameterException
+	 */
+	public static byte[] generateARQC(@NonNull byte[] data, @NonNull byte[] iccSessionKey, @NonNull String keyAlgorithm)
+			throws NoSuchAlgorithmException, InvalidKeyException, NoSuchPaddingException, IllegalBlockSizeException,
+			BadPaddingException, InvalidAlgorithmParameterException {
+
+		
+		/* padding is part of AES CMAC computation */
+		if (Constants.AES_KEY_ALGORITHM == keyAlgorithm)
+			return MessageAuthenticationAlgorithms.computeAESCMAC(data, iccSessionKey);
+		
+		if (Constants.DES_KEY_ALGORITHM != keyAlgorithm)
+			throw new NoSuchAlgorithmException("Unknown algorithm: " + keyAlgorithm);
+
+		/* calculate the data input size */
+		int paddedDataSize = data.length + 1;
+		/* decide how much extra padding is required */
+		if ((paddedDataSize % Constants.DES_BLOCK_SIZE_B) != 0)
+			paddedDataSize += (Constants.DES_BLOCK_SIZE_B - (paddedDataSize % Constants.DES_BLOCK_SIZE_B));
+
+		byte[] inputVector = new byte[paddedDataSize];
+		System.arraycopy(data, 0, inputVector, 0, data.length);
+		inputVector[data.length] = (byte) 0x80;
+
+		log.finest("ARQC input: " + IO.printByteArray(inputVector));
+		
+		byte [] fullCiphertext = SymmetricAlgorithms.encryptTDESData(inputVector, iccSessionKey, null);
+
+		return Arrays.copyOfRange(fullCiphertext, fullCiphertext.length-Constants.DES_BLOCK_SIZE_B, fullCiphertext.length);
+	}
+
 }

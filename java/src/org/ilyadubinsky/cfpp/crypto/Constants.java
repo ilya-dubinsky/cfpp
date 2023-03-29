@@ -22,6 +22,7 @@ public class Constants {
 	/* constants used to load Ciphers and Signatures */
 	public static final String DSA_SHA256_ALGORITHM = "SHA256withDSA";
 	public static final String TDES_ECB_NO_PADDING_ALGORITHM = "DESede/ECB/NoPadding";
+	public static final String TDES_CBC_NO_PADDING_ALGORITHM = "DESede/CBC/NoPadding";
 	public static final String DES_ECB_NO_PADDING_ALGORITHM = "DES/ECB/NoPadding";
 	public static final String AES_ECB_NO_PADDING = "AES/ECB/NoPadding";
 	public static final String AES_CBC_NO_PADDING = "AES/CBC/NoPadding";
