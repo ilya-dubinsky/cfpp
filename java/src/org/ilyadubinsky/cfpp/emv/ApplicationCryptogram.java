@@ -28,6 +28,7 @@ import lombok.extern.java.Log;
 @Log
 public class ApplicationCryptogram {
 
+	public static final int ARC_LENGTH = 2;
 	public static final int EMV_OPTION_A_MAX_PAN_LEN = 16;
 
 	/**
@@ -175,10 +176,9 @@ public class ApplicationCryptogram {
 			System.arraycopy(keyPart, 0, output, i * blockSize, blockSize);
 		}
 
-		
 		if (Constants.DES_KEY_ALGORITHM == keyAlgorithm)
 			output = BitOps.fixParity(output, false);
-		
+
 		log.finest("ICC session key: " + IO.printByteArray(output));
 
 		return output;
@@ -186,10 +186,12 @@ public class ApplicationCryptogram {
 
 	/**
 	 * Generates the ARQC based on the given session key.
-	 * @param data Data to use for ARQC generation.
+	 * 
+	 * @param data          Data to use for ARQC generation.
 	 * @param iccSessionKey Session key, derived according to the EMV spec.
-	 * @param keyAlgorithm Algorithm to use, can be either "AES" or "DES".
-	 * @return ARQC value (CMAC in case of AES, or last block of a CBC chain in case of TDES).
+	 * @param keyAlgorithm  Algorithm to use, can be either "AES" or "DES".
+	 * @return ARQC value (CMAC in case of AES, or last block of a CBC chain in case
+	 *         of TDES).
 	 * @throws NoSuchAlgorithmException
 	 * @throws InvalidKeyException
 	 * @throws NoSuchPaddingException
@@ -201,11 +203,10 @@ public class ApplicationCryptogram {
 			throws NoSuchAlgorithmException, InvalidKeyException, NoSuchPaddingException, IllegalBlockSizeException,
 			BadPaddingException, InvalidAlgorithmParameterException {
 
-		
 		/* padding is part of AES CMAC computation */
 		if (Constants.AES_KEY_ALGORITHM == keyAlgorithm)
-			return MessageAuthenticationAlgorithms.computeAESCMAC(data, iccSessionKey);
-		
+			return Arrays.copyOfRange(MessageAuthenticationAlgorithms.computeAESCMAC(data, iccSessionKey), 0, Constants.DES_BLOCK_SIZE_B);
+
 		if (Constants.DES_KEY_ALGORITHM != keyAlgorithm)
 			throw new NoSuchAlgorithmException("Unknown algorithm: " + keyAlgorithm);
 
@@ -220,10 +221,54 @@ public class ApplicationCryptogram {
 		inputVector[data.length] = (byte) 0x80;
 
 		log.finest("ARQC input: " + IO.printByteArray(inputVector));
-		
-		byte [] fullCiphertext = SymmetricAlgorithms.encryptTDESData(inputVector, iccSessionKey, null);
 
-		return Arrays.copyOfRange(fullCiphertext, fullCiphertext.length-Constants.DES_BLOCK_SIZE_B, fullCiphertext.length);
+		byte[] fullCiphertext = SymmetricAlgorithms.encryptTDESData(inputVector, iccSessionKey, null);
+
+		return Arrays.copyOfRange(fullCiphertext, fullCiphertext.length - Constants.DES_BLOCK_SIZE_B,
+				fullCiphertext.length);
+	}
+
+	/**
+	 * Generates ARPC using the EMV method 1 (i.e., based on the ARC only)
+	 * @param arqc ARQC
+	 * @param arc ARC
+	 * @param sessionKey ICC session key
+	 * @param algorithm Algorithm, can only be "DES" or "AES"
+	 * @return Returns the ARPC, computed using the EMV method 1 (ARQC is XORed with the ARC and encrypted with the session key)
+	 * @throws NoSuchAlgorithmException
+	 * @throws InvalidKeyException
+	 * @throws NoSuchPaddingException
+	 * @throws IllegalBlockSizeException
+	 * @throws BadPaddingException
+	 */
+	public static byte[] generateARPC1(@NonNull byte[] arqc, @NonNull byte[] arc, @NonNull byte[] sessionKey,
+			@NonNull String algorithm) throws NoSuchAlgorithmException, InvalidKeyException, NoSuchPaddingException,
+			IllegalBlockSizeException, BadPaddingException {
+		if (arc.length != ARC_LENGTH)
+			throw new IllegalArgumentException(
+					String.format("ARC length must be %d, array of %d was provided instead", ARC_LENGTH, arc.length));
+		
+		if (arqc.length != Constants.DES_BLOCK_SIZE_B)
+			throw new IllegalArgumentException (
+					String.format("ARQC length must be %d, array of %d was provided instead", Constants.DES_BLOCK_SIZE_B, arqc.length));
+
+		if (Constants.DES_KEY_ALGORITHM != algorithm && Constants.AES_KEY_ALGORITHM != algorithm)
+			throw new NoSuchAlgorithmException("Unknown algorithm: " + algorithm);
+		
+		/* pad the arc to the block length */
+		byte[] inputBlock = new byte[Constants.DES_KEY_ALGORITHM == algorithm ? Constants.DES_BLOCK_SIZE_B
+				: Constants.AES_BLOCK_SIZE_B];
+
+		System.arraycopy(arc, 0, inputBlock, 0, ARC_LENGTH);
+		
+		inputBlock = BitOps.xorArray(inputBlock, arqc);
+		log.finest("ARPC method 1 encryption input: " + IO.printByteArray(inputBlock));
+
+		if (algorithm == Constants.DES_KEY_ALGORITHM)
+			return SymmetricAlgorithms.encryptTDESBlock(inputBlock, sessionKey);
+		else
+			return Arrays.copyOfRange(SymmetricAlgorithms.encryptAESBlock(inputBlock, sessionKey), 0,
+					Constants.DES_BLOCK_SIZE_B);
 	}
 
 }
