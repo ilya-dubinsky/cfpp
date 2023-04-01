@@ -29,6 +29,8 @@ import lombok.extern.java.Log;
 public class ApplicationCryptogram {
 
 	public static final int ARC_LENGTH = 2;
+
+	public static final int ARPC_AUTH_DATA_MIN_LENGTH = 4;
 	public static final int EMV_OPTION_A_MAX_PAN_LEN = 16;
 
 	/**
@@ -205,7 +207,8 @@ public class ApplicationCryptogram {
 
 		/* padding is part of AES CMAC computation */
 		if (Constants.AES_KEY_ALGORITHM == keyAlgorithm)
-			return Arrays.copyOfRange(MessageAuthenticationAlgorithms.computeAESCMAC(data, iccSessionKey), 0, Constants.DES_BLOCK_SIZE_B);
+			return Arrays.copyOfRange(MessageAuthenticationAlgorithms.computeAESCMAC(data, iccSessionKey), 0,
+					Constants.DES_BLOCK_SIZE_B);
 
 		if (Constants.DES_KEY_ALGORITHM != keyAlgorithm)
 			throw new NoSuchAlgorithmException("Unknown algorithm: " + keyAlgorithm);
@@ -230,11 +233,13 @@ public class ApplicationCryptogram {
 
 	/**
 	 * Generates ARPC using the EMV method 1 (i.e., based on the ARC only)
-	 * @param arqc ARQC
-	 * @param arc ARC
+	 * 
+	 * @param arqc       ARQC
+	 * @param arc        ARC
 	 * @param sessionKey ICC session key
-	 * @param algorithm Algorithm, can only be "DES" or "AES"
-	 * @return Returns the ARPC, computed using the EMV method 1 (ARQC is XORed with the ARC and encrypted with the session key)
+	 * @param algorithm  Algorithm, can only be "DES" or "AES"
+	 * @return Returns the ARPC, computed using the EMV method 1 (ARQC is XORed with
+	 *         the ARC and encrypted with the session key)
 	 * @throws NoSuchAlgorithmException
 	 * @throws InvalidKeyException
 	 * @throws NoSuchPaddingException
@@ -244,23 +249,24 @@ public class ApplicationCryptogram {
 	public static byte[] generateARPC1(@NonNull byte[] arqc, @NonNull byte[] arc, @NonNull byte[] sessionKey,
 			@NonNull String algorithm) throws NoSuchAlgorithmException, InvalidKeyException, NoSuchPaddingException,
 			IllegalBlockSizeException, BadPaddingException {
+
 		if (arc.length != ARC_LENGTH)
 			throw new IllegalArgumentException(
 					String.format("ARC length must be %d, array of %d was provided instead", ARC_LENGTH, arc.length));
-		
+
 		if (arqc.length != Constants.DES_BLOCK_SIZE_B)
-			throw new IllegalArgumentException (
-					String.format("ARQC length must be %d, array of %d was provided instead", Constants.DES_BLOCK_SIZE_B, arqc.length));
+			throw new IllegalArgumentException(String.format("ARQC length must be %d, array of %d was provided instead",
+					Constants.DES_BLOCK_SIZE_B, arqc.length));
 
 		if (Constants.DES_KEY_ALGORITHM != algorithm && Constants.AES_KEY_ALGORITHM != algorithm)
 			throw new NoSuchAlgorithmException("Unknown algorithm: " + algorithm);
-		
+
 		/* pad the arc to the block length */
 		byte[] inputBlock = new byte[Constants.DES_KEY_ALGORITHM == algorithm ? Constants.DES_BLOCK_SIZE_B
 				: Constants.AES_BLOCK_SIZE_B];
 
 		System.arraycopy(arc, 0, inputBlock, 0, ARC_LENGTH);
-		
+
 		inputBlock = BitOps.xorArray(inputBlock, arqc);
 		log.finest("ARPC method 1 encryption input: " + IO.printByteArray(inputBlock));
 
@@ -269,6 +275,50 @@ public class ApplicationCryptogram {
 		else
 			return Arrays.copyOfRange(SymmetricAlgorithms.encryptAESBlock(inputBlock, sessionKey), 0,
 					Constants.DES_BLOCK_SIZE_B);
+	}
+
+	/**
+	 * Generates ARPC using the EMV method 2 (i.e., based on the CSU and the
+	 * proprietary authentication data).
+	 * 
+	 * @param arqc          ARQC.
+	 * @param csuAuthData   Card Status update (CSU).
+	 * @param iccSessionKey ICC session key.
+	 * @param algorithm     ALgorithm. Can be either "DES" or "AES" only.
+	 * @return The ARPC value. The raw 8 byte ARPC is returned for method 2, it is
+	 *         up to the caller to concatenate it with the CSU and the proprietary
+	 *         data.
+	 * 
+	 * @throws NoSuchAlgorithmException
+	 * @throws InvalidKeyException
+	 * @throws NoSuchPaddingException
+	 * @throws IllegalBlockSizeException
+	 * @throws BadPaddingException
+	 * @throws InvalidAlgorithmParameterException
+	 */
+	public static byte[] generateARPC2(@NonNull byte[] arqc, @NonNull byte[] csuAuthData, @NonNull byte[] iccSessionKey,
+			@NonNull String algorithm) throws NoSuchAlgorithmException, InvalidKeyException, NoSuchPaddingException,
+			IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
+
+		if (arqc.length != Constants.DES_BLOCK_SIZE_B)
+			throw new IllegalArgumentException(String.format("ARQC length must be %d, array of %d was provided instead",
+					Constants.DES_BLOCK_SIZE_B, arqc.length));
+
+		if (csuAuthData.length < ARPC_AUTH_DATA_MIN_LENGTH)
+			throw new IllegalArgumentException(
+					String.format("CSU and auth data length must be at least %d, array of %d was provided instead",
+							ARPC_AUTH_DATA_MIN_LENGTH, csuAuthData.length));
+
+		if (Constants.DES_KEY_ALGORITHM != algorithm && Constants.AES_KEY_ALGORITHM != algorithm)
+			throw new NoSuchAlgorithmException("Unknown algorithm: " + algorithm);
+
+		/* copy data */
+		byte[] inputBlock = new byte[arqc.length + csuAuthData.length];
+		System.arraycopy(arqc, 0, inputBlock, 0, arqc.length);
+		System.arraycopy(csuAuthData, 0, inputBlock, arqc.length, csuAuthData.length);
+
+		/* compute ARQC for it and return the result */
+		return generateARQC(inputBlock, iccSessionKey, algorithm);
 	}
 
 }

@@ -1309,7 +1309,6 @@ int emv_generate_arqc(uint8_t *session_key, size_t session_key_len,
 
 /*
  * Generates ARPC using one of the two standard methods. If ARC is provided, uses Method 1. Otherwise, uses Method 2.
- * Note: the raw 8 byte ARPC is returned for method 2, it is up to the caller to concatenate it with the CSU and the proprietary data.
  * @param arqc The ARQC value, assumed to be 8 byte length.
  * @param arc The ARC is 2 byte length. If present, other input parameters are ignored.
  * @param csu The Card Status Update, assumed to be 4 byte length.
