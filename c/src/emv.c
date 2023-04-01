@@ -1222,10 +1222,10 @@ int emv_generate_arpc(uint8_t *arqc, uint8_t *arc, uint8_t *csu, uint8_t *pad,
 		/* ARPC Method 1 */
 		memcpy(buffer, arc, EMV_ARPC_ARC_LEN);
 		xor_array(buffer, arqc, buffer, EMV_ARQC_MAX_LEN);
-		print_array("\tMethod 1 input: ", buffer, sizeof(buffer), "\n");
+		print_array("\tMethod 1 input: ", buffer, EMV_ARQC_MAX_LEN, "\n");
 		if (ALGORITHM_TDES==algorithm) {
 			DES_set_key_unchecked((const_DES_cblock*)key, &des_key_a);
-			DES_set_key_unchecked((const_DES_cblock*)key + TDES_KEY_LENGTH_1, &des_key_b);
+			DES_set_key_unchecked((const_DES_cblock*)(key + TDES_KEY_LENGTH_1), &des_key_b);
 			DES_ecb2_encrypt((const_DES_cblock*) buffer, (DES_cblock*)output, &des_key_a, &des_key_b, DES_ENCRYPT);
 			result = TDES_BLOCK_SIZE;
 		} else {
