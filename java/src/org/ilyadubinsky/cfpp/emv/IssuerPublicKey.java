@@ -54,7 +54,7 @@ public class IssuerPublicKey extends EMVRecoverableKey {
 
 		/* locate and set the CA */
 		CertificateAuthorityKey caKey = CertificateAuthorityKey.getCAKey(caPublicKeyIndex);
-
+		
 		EMVRecoverableKey result = new IssuerPublicKey();
 
 		result.setPublicExponent(exponent);

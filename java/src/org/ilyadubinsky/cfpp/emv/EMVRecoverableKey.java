@@ -56,7 +56,6 @@ public abstract class EMVRecoverableKey extends EMVRecoverable implements EMVKey
 	 * 
 	 */
 	protected BigInteger privateExponent;
-
 	protected byte[] privateExponentData;
 
 	/**
@@ -365,6 +364,54 @@ public abstract class EMVRecoverableKey extends EMVRecoverable implements EMVKey
 
 		builder.append(IO.SEPARATOR).append('\n');
 		return builder.toString();
+	}
+
+	@Override
+	protected void writeHeader(ByteBuffer b) {
+		/* write the entity identifier */
+		writeEntityIdentifier(b);
+		/* write the expiry date */
+		writeExpiryDate(b);
+		/* write the serial number */
+		writeCertificateSerial(b);
+		/* write the hash algorithm identifier */
+		writeHashAlgorithm(b);
+		/* write the public key algorithm */
+		writePkAlgorithm(b);
+		/* write the PK length */
+		writePkLength(b);
+		/* write the exponent length */
+		writePublicExponentLength(b);
+	}
+
+	private void writePublicExponentLength(ByteBuffer b) {
+		b.put(publicExponentLength);
+	}
+
+	private void writePkLength(ByteBuffer b) {
+		b.put((byte) getPublicKeyLength());
+	}
+
+	private void writePkAlgorithm(ByteBuffer b) {
+		b.put(RSA_PK_ALGORITHM);
+	}
+
+	private void writeCertificateSerial(ByteBuffer b) {
+		b.put(getCertificateSerial());
+	}
+
+	private void writeExpiryDate(ByteBuffer b) {
+		b.put(getValidUntilMonth());
+		b.put(getValidUntilYear());
+	}
+
+	private void writeEntityIdentifier(ByteBuffer b) {
+		b.put(getIssuingEntityId());
+	}
+	
+	@Override
+	protected void writePayload(ByteBuffer b) {
+		b.put(this.getModulusData());
 	}
 
 }

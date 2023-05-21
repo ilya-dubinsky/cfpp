@@ -47,6 +47,10 @@ public class IO {
 			if (i>0 && (i%WRAP_WIDTH==0))
 				buffer.append('\n');
 		}
+		
+		if (groupBytes) 
+			buffer.append(String.format(" len: %d", array.length));
+		
 		return buffer.toString();
 	}
 }

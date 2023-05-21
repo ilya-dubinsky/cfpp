@@ -121,6 +121,24 @@ public class EMVSDACertificate extends EMVRecoverable {
 	protected void writeExtraData(ByteBuffer extraDataBuffer) {
 		extraDataBuffer.put(this.extraData);
 	}
+	
+	@Override
+	/** {@inheritDoc } */
+	protected void writeHeader(ByteBuffer b) {
+		/* write hash algorithm */
+		writeHashAlgorithm(b);
+	}
+	
+	@Override
+	/** {@inheritDoc } */
+	protected void writePayload(ByteBuffer b) {
+		/* write the data auth code */
+		writeIssuerAuthCode(b);
+	}
+
+	private void writeIssuerAuthCode(ByteBuffer b) {
+		b.put(getIssuerAuthCode());
+	}
 
 	@Override
 	/** {@inheritDoc } */
@@ -128,7 +146,7 @@ public class EMVSDACertificate extends EMVRecoverable {
 		StringBuilder builder = new StringBuilder();
 		builder.append(getParentKey().toString());
 
-		builder.append(IO.SEPARATOR).append('\n').append("SDA").append(IO.SEPARATOR).append('\n');
+		builder.append(IO.SEPARATOR).append('\n').append("SDA\n").append(IO.SEPARATOR).append('\n');
 
 		builder.append("\tSentinel               : ").append(String.format("%02X", this.getStartSentinel()))
 				.append('\n');

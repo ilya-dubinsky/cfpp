@@ -145,7 +145,7 @@ public class EMVDDACertificate extends EMVRecoverable {
 		StringBuilder builder = new StringBuilder();
 		builder.append(getParentKey().toString());
 
-		builder.append(IO.SEPARATOR).append('\n').append("DDA").append(IO.SEPARATOR).append('\n');
+		builder.append(IO.SEPARATOR).append('\n').append("DDA\n").append(IO.SEPARATOR).append('\n');
 
 		builder.append("\tSentinel               : ").append(String.format("%02X", this.getStartSentinel()))
 				.append('\n');
@@ -163,4 +163,29 @@ public class EMVDDACertificate extends EMVRecoverable {
 		builder.append(IO.SEPARATOR).append('\n');
 		return builder.toString();
 	}
+
+	@Override
+	protected void writeHeader(ByteBuffer b) {
+		/* write algorithm indicator */
+		writeHashAlgorithm(b);
+		/* write ICC dynamic data length */
+		writeIccDynamicDataLength(b);
+	}
+
+	private void writeIccDynamicData(ByteBuffer b) {
+		b.put( getIccDynamicData() );
+		
+	}
+
+	private void writeIccDynamicDataLength(ByteBuffer b) {
+		b.put( getIccDynamicDataLength());
+	}
+
+	@Override
+	protected void writePayload(ByteBuffer b) {
+		/* write ICC dynamic data */
+		writeIccDynamicData(b);		
+	}
+
+
 }

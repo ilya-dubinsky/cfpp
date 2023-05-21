@@ -87,6 +87,8 @@ public abstract class EMVRecoverable {
 
 	protected static final byte SHA1_HASH_ALGORITHM = 0x01;
 	protected static final byte START_SENTINEL = 0x6A;
+	
+	protected static final byte PADDING_VALUE = (byte) 0xBB;
 
 	static {
 		HASH_ALGORITHMS.put((byte) SHA1_HASH_ALGORITHM, "SHA-1");
@@ -150,6 +152,8 @@ public abstract class EMVRecoverable {
 			IllegalBlockSizeException, BadPaddingException, SignatureException {
 
 		result.setParentKey(parentKey);
+		result.setCertificate(certificate);
+		result.setRemainder(remainder);
 
 		byte[] decipheredData = AsymmetricAlgorithms.decryptRSA(certificate, result.getParentKey().getModulus(),
 				result.getParentKey().getPublicExponent());
@@ -211,6 +215,21 @@ public abstract class EMVRecoverable {
 	 */
 	@Getter
 	protected byte startSentinel;
+	
+	
+	/**
+	 *  Stores the remainder of the certificate contents, if applicable.
+	 */
+	@Getter 
+	@Setter(AccessLevel.PACKAGE)
+	protected byte[] remainder;
+
+	/**
+	 * Stores the enciphered certificate.
+	 */
+	@Getter 
+	@Setter(AccessLevel.PACKAGE)
+	protected byte[] certificate;
 
 	/**
 	 * Reads the contents of the certificate from the buffer. The "contents" are
@@ -286,35 +305,48 @@ public abstract class EMVRecoverable {
 		this.readEndSentinel(buffer);
 
 		/* validate the hash value */
-		int extraDataLen = this.getExtraDataSize();
-
-		int hashInputLength = this.getParentKey().getModulusLength() - HASH_VALUE_LENGTH - 2 /* sentinels */
-				+ extraDataLen;
-
-		byte[] hashInput = new byte[hashInputLength];
-
-		// log.finest("fullKey: \n" + IO.printByteArray(fullKey));
-
-		System.arraycopy(fullKey, 1, hashInput, 0, hashInputLength - extraDataLen);
-
-		/* write the exponent */
-		ByteBuffer extraDataBuffer = ByteBuffer.wrap(hashInput, hashInput.length - extraDataLen, extraDataLen);
-
-		writeExtraData(extraDataBuffer);
-
-		log.finest("Hash input: \n" + IO.printByteArray(hashInput));
-		byte[] hashOutput = MessageAuthenticationAlgorithms.computeSHA1(hashInput);
-		log.finest("Hash Output: \n" + IO.printByteArray(hashOutput));
-
+		byte[] hashOutput = computeHashSignature();
+		
 		/* compare the computed hash with the provided one */
 		if (!Arrays.equals(hashOutput, this.getHashSignature())) {
 			log.warning("The provided signature " + IO.printByteArray(this.getHashSignature())
 					+ " doesn't match the computed signature " + IO.printByteArray(hashOutput));
-			throw new SignatureException("The provided SHA-1hr signature doesn't match the recovered one");
+			throw new SignatureException("The provided SHA-1 signature doesn't match the recovered one");
 		}
-
 	}
+	
+	protected byte[] computeHashSignature() throws NoSuchAlgorithmException, IllegalArgumentException {
+		int hashInputSize = this.getParentKey().getModulusLength() 
+								- 2 /* sentinels */ + getExtraDataSize() 
+								- HASH_VALUE_LENGTH;
+		
+		byte[] hashInput = new byte[hashInputSize];
+		Arrays.fill(hashInput, PADDING_VALUE);
+		
+		ByteBuffer hashBuffer = ByteBuffer.wrap(hashInput);
+		
+		hashBuffer.put(getCertificateFormat());
+		/* write the header except the sentinel */
+		writeHeader(hashBuffer);
+		/* write the payload */
+		writePayload(hashBuffer);
+		/* the extra data */
+		ByteBuffer extraDataBuffer = ByteBuffer.wrap(hashInput, hashInputSize - getExtraDataSize(), getExtraDataSize());
+		writeExtraData(extraDataBuffer);
+		
+		log.finest("Hash input: \n" + IO.printByteArray(hashInput));
+		byte[] hashOutput = MessageAuthenticationAlgorithms.computeSHA1(hashInput);
+		log.finest("Hash Output: \n" + IO.printByteArray(hashOutput));
 
+		return hashOutput;
+		
+	}
+	
+	protected abstract void writeHeader(ByteBuffer b);
+
+	protected abstract void writePayload(ByteBuffer b);
+	
+	
 	/**
 	 * Reads the start sentinel from the buffer, validating its value.
 	 * 
@@ -404,5 +436,9 @@ public abstract class EMVRecoverable {
 	 * @param buffer Buffer to which the extra data is written.
 	 */
 	protected abstract void writeExtraData(ByteBuffer buffer);
+
+	protected void writeHashAlgorithm(ByteBuffer b) {
+		b.put(SHA1_HASH_ALGORITHM);
+	}
 
 }
